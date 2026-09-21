@@ -230,20 +230,22 @@
     white-space: nowrap;
   }
   .tabs button[aria-selected="true"] {
-    background: var(--surface);
+    background: var(--accent-soft);
     color: var(--ink);
-    box-shadow: var(--shadow);
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1.5px var(--accent);
   }
   .jicon { width: 22px; height: 22px; flex: none; image-rendering: auto; }
   .tabs .count {
     font-variant-numeric: tabular-nums;
     font-size: 12.5px;
     color: var(--muted);
-    background: var(--accent-soft);
-    padding: 2px 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 1px 8px;
     border-radius: 999px;
   }
-  .tabs button[aria-selected="true"] .count { color: var(--accent); }
+  .tabs button[aria-selected="true"] .count { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
 
   .panel {
     background: var(--surface);
