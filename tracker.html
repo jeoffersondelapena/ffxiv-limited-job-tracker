@@ -765,12 +765,14 @@
     // A short fixed-length glide: the browser's own smooth scroll scales with distance and feels slow on a long list.
     const duration = 260, t0 = performance.now();
     const ease = (t) => 1 - Math.pow(1 - t, 3);
+    let done = false;
     const step = (now) => {
       const p = Math.min(1, (now - t0) / duration);
       window.scrollTo(0, Math.round(start * (1 - ease(p))));
-      if (p < 1) requestAnimationFrame(step);
+      if (p < 1) requestAnimationFrame(step); else done = true;
     };
     requestAnimationFrame(step);
+    setTimeout(() => { if (!done) { done = true; window.scrollTo(0, 0); } }, duration + 120); // finish even if frames are throttled
   });
   const $chars = document.getElementById("charSeg");
   const $top = document.getElementById("toTopBtn");
