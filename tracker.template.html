@@ -572,23 +572,25 @@
 
   function queueWrite(key) {
     writeLS(LS_PROG, progress);
-    if (!db) { dirty[key] = true; return; }
+    dirty[key] = true; // local state is ahead of the cloud until a write lands; snapshots are ignored meanwhile
+    if (!db) return;
     clearTimeout(timers[key]);
     timers[key] = setTimeout(() => flush(key), 350);
   }
   async function flush(key) {
-    if (!db) return;
-    if (inflight[key]) { dirty[key] = true; return; }
+    if (!db || inflight[key]) return; // an in-flight write re-runs flush when it settles
     inflight[key] = true; dirty[key] = false;
+    const body = { done: Object.assign({}, progress[key]), updatedAt: new Date().toISOString() };
     setStatus("saving", "Saving…");
     try {
-      await db.doc("progress/" + key).set({ done: progress[key], updatedAt: new Date().toISOString() });
+      await db.doc("progress/" + key).set(body);
       setStatus("cloud", "Saved to the cloud");
     } catch (e) {
+      dirty[key] = true;
       setStatus("error", "Could not save to cloud; kept on this device");
     } finally {
       inflight[key] = false;
-      if (dirty[key]) flush(key);
+      if (dirty[key]) setTimeout(() => flush(key), 500);
     }
   }
   function queueNames() {
