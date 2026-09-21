@@ -795,14 +795,25 @@
   // ---------- events ----------
   function saveUI() { writeLS(LS_UI, ui); }
 
-  $list.addEventListener("change", (ev) => {
-    const cb = ev.target;
-    if (!(cb instanceof HTMLInputElement) || cb.type !== "checkbox") return;
-    const id = Number(cb.closest(".entry").dataset.id);
+  function toggleEntry(id, value) {
     const key = progKey();
-    if (cb.checked) progress[key][id] = true; else delete progress[key][id];
+    const next = value === undefined ? !progress[key][id] : !!value;
+    if (next) progress[key][id] = true; else delete progress[key][id];
     queueWrite(key);
     render();
+  }
+  $list.addEventListener("change", (ev) => {
+    const cb = ev.target;
+    if (!cb || cb.type !== "checkbox") return;
+    const row = cb.closest(".entry");
+    if (row) toggleEntry(Number(row.dataset.id), cb.checked);
+  });
+  $list.addEventListener("click", (ev) => {
+    const lbl = ev.target.closest("label.name");
+    if (!lbl || ev.target.closest("a")) return;
+    ev.preventDefault();
+    const row = lbl.closest(".entry");
+    if (row) toggleEntry(Number(row.dataset.id));
   });
   document.getElementById("tab-blu").addEventListener("click", () => { ui.list = "blu"; saveUI(); render(); });
   document.getElementById("tab-bst").addEventListener("click", () => { ui.list = "bst"; saveUI(); render(); });
