@@ -688,9 +688,8 @@
   const $status = document.getElementById("syncStatus");
   let db = null;
   const inflight = {};   // key -> true while a write is in flight
-  const dirty = {};      // key -> true when local changed before db resolved
+  const dirty = {};      // key -> true while local state is ahead of the cloud
   const timers = {};
-  let namesDirty = false;
 
   const $float = document.getElementById("syncFloat");
   function setStatus(state, text) {
@@ -706,8 +705,43 @@
     window.addEventListener("scroll", () => { $ctx.hidden = $chars.getBoundingClientRect().bottom > 0; }, { passive: true });
   }
 
+  // Every synced document: how to build its body, how to adopt a cloud snapshot, and whether this device has anything worth pushing.
+  const SYNCED_UI = ["char", "list", "hideDone", "openWorldOnly", "rareCounts", "groupByLoc"];
+  const DEFAULT_NAMES = { c1: "Character 1", c2: "Character 2" };
+  const DOCS = {};
+  for (const key of Object.keys(progress)) {
+    DOCS[key] = {
+      path: "progress/" + key,
+      body: () => ({ done: Object.assign({}, progress[key]), updatedAt: new Date().toISOString() }),
+      adopt: (d) => { progress[key] = (d.done && typeof d.done === "object") ? Object.assign({}, d.done) : {}; writeLS(LS_PROG, progress); },
+      hasLocal: () => Object.keys(progress[key]).length > 0
+    };
+  }
+  DOCS.names = {
+    path: "settings/chars",
+    body: () => ({ c1: names.c1, c2: names.c2 }),
+    adopt: (d) => { for (const c of CHARS) if (typeof d[c] === "string" && d[c].trim()) names[c] = d[c]; writeLS(LS_NAMES, names); },
+    hasLocal: () => CHARS.some((c) => names[c] !== DEFAULT_NAMES[c])
+  };
+  DOCS.ui = {
+    path: "settings/ui",
+    body: () => { const b = { levels: Object.assign({}, ui.levels) }; for (const k of SYNCED_UI) b[k] = ui[k]; return b; },
+    adopt: (d) => {
+      for (const k of SYNCED_UI) if (k in d) ui[k] = d[k];
+      if (!CHARS.includes(ui.char)) ui.char = "c1";
+      if (!LISTS[ui.list]) ui.list = "blu";
+      ui.levels = (d.levels && typeof d.levels === "object") ? Object.assign({}, d.levels) : {};
+      writeLS(LS_UI, ui);
+    },
+    hasLocal: () => true
+  };
+  function persistLocal(key) {
+    if (key === "names") writeLS(LS_NAMES, names);
+    else if (key === "ui") writeLS(LS_UI, ui);
+    else writeLS(LS_PROG, progress);
+  }
   function queueWrite(key) {
-    writeLS(LS_PROG, progress);
+    persistLocal(key);
     dirty[key] = true; // local state is ahead of the cloud until a write lands; snapshots are ignored meanwhile
     if (!db) return;
     clearTimeout(timers[key]);
@@ -716,10 +750,10 @@
   async function flush(key) {
     if (!db || inflight[key]) return; // an in-flight write re-runs flush when it settles
     inflight[key] = true; dirty[key] = false;
-    const body = { done: Object.assign({}, progress[key]), updatedAt: new Date().toISOString() };
+    const body = DOCS[key].body();
     setStatus("saving", "Saving…");
     try {
-      await db.doc("progress/" + key).set(body);
+      await db.doc(DOCS[key].path).set(body);
       setStatus("cloud", "Saved to the cloud");
     } catch (e) {
       dirty[key] = true;
@@ -729,14 +763,6 @@
       if (dirty[key]) setTimeout(() => flush(key), 500);
     }
   }
-  function queueNames() {
-    writeLS(LS_NAMES, names);
-    if (!db) { namesDirty = true; return; }
-    clearTimeout(timers.names);
-    timers.names = setTimeout(async () => {
-      try { await db.doc("settings/chars").set({ c1: names.c1, c2: names.c2 }); } catch (e) { /* local copy stands */ }
-    }, 400);
-  }
 
   (async function connect() {
     let ns = null;
@@ -744,31 +770,19 @@
     if (!ns) { setStatus("local", "Saving on this device only (open the hosted link to sync)"); return; }
     db = ns;
     setStatus("cloud", "Saved to the cloud");
-    for (const key of Object.keys(progress)) {
-      db.doc("progress/" + key).onSnapshot((snap) => {
+    for (const key of Object.keys(DOCS)) {
+      db.doc(DOCS[key].path).onSnapshot((snap) => {
         if (inflight[key] || dirty[key]) return;
         if (snap.exists) {
-          const d = snap.data() || {};
-          // snapshots are frozen; keep a mutable copy so toggles can write into it
-          progress[key] = (d.done && typeof d.done === "object") ? Object.assign({}, d.done) : {};
-          writeLS(LS_PROG, progress);
+          DOCS[key].adopt(snap.data() || {}); // snapshots are frozen; adopt() copies what it keeps
+          syncControls();
           render();
-        } else if (Object.keys(progress[key]).length) {
+        } else if (DOCS[key].hasLocal()) {
           flush(key); // first visit from this device: push what was saved locally
         }
       }, () => setStatus("error", "Cloud sync lost; changes stay on this device"));
       if (dirty[key]) flush(key);
     }
-    db.doc("settings/chars").onSnapshot((snap) => {
-      if (namesDirty) { namesDirty = false; queueNames(); return; }
-      if (snap.exists) {
-        const d = snap.data() || {};
-        if (typeof d.c1 === "string") names.c1 = d.c1;
-        if (typeof d.c2 === "string") names.c2 = d.c2;
-        writeLS(LS_NAMES, names);
-        renderChars();
-      }
-    }, () => {});
   })();
 
   // ---------- helpers ----------
@@ -939,7 +953,11 @@
   }
 
   // ---------- events ----------
-  function saveUI() { writeLS(LS_UI, ui); }
+  function saveUI() { queueWrite("ui"); }
+  function syncControls() {
+    for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) document.getElementById(id).checked = !!ui[id];
+    document.getElementById("rareCounts").disabled = !ui.openWorldOnly;
+  }
 
   let lastCleared = null;
   function toggleEntry(id, value) {
@@ -979,7 +997,7 @@
     const finish = (commit) => {
       if (finished) return; finished = true;
       const v = input.value.trim();
-      if (commit && v) { names[ui.char] = v; queueNames(); }
+      if (commit && v) { names[ui.char] = v; queueWrite("names"); }
       seg.replaceChild(btn, input);
       render();
     };
@@ -996,18 +1014,16 @@
   const $rare = document.getElementById("rareCounts");
   for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) {
     const el = document.getElementById(id);
-    el.checked = !!ui[id];
-    el.addEventListener("change", () => { ui[id] = el.checked; $rare.disabled = !ui.openWorldOnly; saveUI(); render(); });
+    el.addEventListener("change", () => { ui[id] = el.checked; syncControls(); saveUI(); render(); });
   }
-  $rare.disabled = !ui.openWorldOnly;
+  syncControls();
   const $search = document.getElementById("searchInput");
   $search.value = ui.search || "";
-  $search.addEventListener("input", () => { ui.search = $search.value; saveUI(); render(); });
+  $search.addEventListener("input", () => { ui.search = $search.value; writeLS(LS_UI, ui); render(); });
   document.getElementById("resetBtn").addEventListener("click", () => {
     ui.hideDone = ui.openWorldOnly = ui.rareCounts = ui.groupByLoc = false;
     ui.search = ""; delete ui.levels[levelKey()];
-    for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) document.getElementById(id).checked = false;
-    $rare.disabled = true;
+    syncControls();
     $search.value = ""; $level.value = "";
     saveUI(); render();
   });

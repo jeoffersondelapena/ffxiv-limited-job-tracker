@@ -18,7 +18,8 @@ window.claude = { use: async (name) => {
       delete: async () => { delete store[path]; },
       onSnapshot: (next) => { (listeners[path] = listeners[path] || []).push(next); setTimeout(() => next(snap(path)), 30); return () => {}; },
       collection: () => { throw new Error('n/a'); } });
-  return { doc, collection: () => { throw new Error('n/a'); } };
+  window.__db = { doc, collection: () => { throw new Error('n/a'); } }; // exposed so tests can simulate another device
+  return window.__db;
 } };
 </script>
 '''
