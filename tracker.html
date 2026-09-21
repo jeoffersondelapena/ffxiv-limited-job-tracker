@@ -613,7 +613,8 @@
         if (inflight[key] || dirty[key]) return;
         if (snap.exists) {
           const d = snap.data() || {};
-          progress[key] = (d.done && typeof d.done === "object") ? d.done : {};
+          // snapshots are frozen; keep a mutable copy so toggles can write into it
+          progress[key] = (d.done && typeof d.done === "object") ? Object.assign({}, d.done) : {};
           writeLS(LS_PROG, progress);
           render();
         } else if (Object.keys(progress[key]).length) {
@@ -799,8 +800,10 @@
 
   function toggleEntry(id, value) {
     const key = progKey();
-    const next = value === undefined ? !progress[key][id] : !!value;
-    if (next) progress[key][id] = true; else delete progress[key][id];
+    const cur = Object.assign({}, progress[key]);
+    const next = value === undefined ? !cur[id] : !!value;
+    if (next) cur[id] = true; else delete cur[id];
+    progress[key] = cur;
     queueWrite(key);
     render();
   }
