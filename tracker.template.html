@@ -1,0 +1,856 @@
+<title>Spellbook & Bestiary</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #eef1f6;
+    --surface: #ffffff;
+    --surface-2: #f6f8fb;
+    --ink: #1a2130;
+    --muted: #5d6879;
+    --line: #d7dde8;
+    --line-strong: #b9c2d1;
+    --accent: #2b5cc4;
+    --accent-ink: #ffffff;
+    --accent-soft: #e3ebfb;
+    --done: #2f7d5a;
+    --done-soft: #e2f1e9;
+    --warn: #9a6400;
+    --warn-soft: #fbf0d6;
+    --chip-inst: #5b6578;
+    --chip-inst-soft: #e9edf3;
+    --chip-hunt: #a8541a;
+    --chip-hunt-soft: #fbe9dc;
+    --chip-map: #7a5a2b;
+    --chip-map-soft: #f3ead9;
+    --chip-fate: #1f7a8c;
+    --chip-fate-soft: #dcf0f4;
+    --chip-leve: #6b4fbb;
+    --chip-leve-soft: #ebe5fa;
+    --chip-totem: #8a6d00;
+    --chip-totem-soft: #f7efc9;
+    --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 8px 24px -16px rgba(20, 30, 50, .25);
+    --radius: 10px;
+  }
+  :root[data-list="bst"] {
+    --accent: #2c7a56;
+    --accent-soft: #dff0e7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f131a;
+      --surface: #171d27;
+      --surface-2: #1d2430;
+      --ink: #e6eaf1;
+      --muted: #98a3b6;
+      --line: #2a3342;
+      --line-strong: #3b4657;
+      --accent: #7fa4f2;
+      --accent-ink: #0f131a;
+      --accent-soft: #1c2a47;
+      --done: #6fc79a;
+      --done-soft: #16301f;
+      --warn: #e5b45a;
+      --warn-soft: #3a2d10;
+      --chip-inst: #aab4c6;
+      --chip-inst-soft: #262e3b;
+      --chip-hunt: #f0a070;
+      --chip-hunt-soft: #3a2517;
+      --chip-map: #d6b27a;
+      --chip-map-soft: #332816;
+      --chip-fate: #79c8d8;
+      --chip-fate-soft: #123036;
+      --chip-leve: #b6a4ee;
+      --chip-leve-soft: #271f42;
+      --chip-totem: #e2c760;
+      --chip-totem-soft: #332c0f;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .6);
+    }
+    :root:not([data-theme="light"])[data-list="bst"] {
+      --accent: #6fcf9a;
+      --accent-soft: #16311f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f131a;
+    --surface: #171d27;
+    --surface-2: #1d2430;
+    --ink: #e6eaf1;
+    --muted: #98a3b6;
+    --line: #2a3342;
+    --line-strong: #3b4657;
+    --accent: #7fa4f2;
+    --accent-ink: #0f131a;
+    --accent-soft: #1c2a47;
+    --done: #6fc79a;
+    --done-soft: #16301f;
+    --warn: #e5b45a;
+    --warn-soft: #3a2d10;
+    --chip-inst: #aab4c6;
+    --chip-inst-soft: #262e3b;
+    --chip-hunt: #f0a070;
+    --chip-hunt-soft: #3a2517;
+    --chip-map: #d6b27a;
+    --chip-map-soft: #332816;
+    --chip-fate: #79c8d8;
+    --chip-fate-soft: #123036;
+    --chip-leve: #b6a4ee;
+    --chip-leve-soft: #271f42;
+    --chip-totem: #e2c760;
+    --chip-totem-soft: #332c0f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .6);
+  }
+  :root[data-theme="dark"][data-list="bst"] {
+    --accent: #6fcf9a;
+    --accent-soft: #16311f;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding-block: 20px 56px;
+    padding-inline: 16px;
+  }
+  h1 {
+    font-family: "Cinzel", "Times New Roman", serif;
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: .02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px 24px;
+    margin-bottom: 16px;
+  }
+  .status {
+    font-size: 12.5px;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .status::before {
+    content: "";
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--line-strong);
+  }
+  .status[data-state="cloud"]::before { background: var(--done); }
+  .status[data-state="saving"]::before { background: var(--warn); }
+  .status[data-state="local"]::before { background: var(--warn); }
+  .status[data-state="error"]::before { background: #d04a4a; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px;
+  }
+  .tabs button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tabs button[aria-selected="true"] {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+  .tabs .count {
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
+    color: var(--muted);
+    background: var(--accent-soft);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .tabs button[aria-selected="true"] .count { color: var(--accent); }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    display: grid;
+    gap: 12px;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+  }
+  .label {
+    font-size: 11.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .seg button {
+    appearance: none;
+    border: 0;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 500;
+    padding: 7px 14px;
+    cursor: pointer;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .seg button + button { border-left: 1px solid var(--line-strong); }
+  .seg button[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .seg input {
+    font: inherit;
+    padding: 6px 10px;
+    border: 0;
+    border-left: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    width: 180px;
+  }
+  .ghost {
+    appearance: none;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--accent);
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .ghost:hover { background: var(--accent-soft); }
+  .field {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .field input#levelInput {
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    width: 76px;
+    padding: 6px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .field input[type="search"] {
+    font: inherit;
+    padding: 6px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    width: 200px;
+  }
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    cursor: pointer;
+    user-select: none;
+    font-size: 14px;
+  }
+  .toggle input { accent-color: var(--accent); margin: 0; width: 16px; height: 16px; }
+  .toggle:has(input:checked) {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+  .toggle .hint { color: var(--muted); font-size: 12.5px; }
+  .toggle:has(input:disabled) { opacity: .5; cursor: default; }
+  .summary {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px 16px;
+    margin: 18px 2px 10px;
+    color: var(--muted);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary strong { color: var(--ink); font-weight: 600; }
+  .bar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--line);
+    overflow: hidden;
+    margin: 0 2px 16px;
+  }
+  .bar span { display: block; height: 100%; background: var(--done); width: 0; transition: width .3s ease; }
+  @media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
+
+  .group {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .group > header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 12px;
+    padding: 10px 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .group > header h2 {
+    font-family: "Cinzel", "Times New Roman", serif;
+    font-weight: 600;
+    font-size: 16px;
+    margin: 0;
+    letter-spacing: .01em;
+  }
+  .group > header .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .entry {
+    display: grid;
+    grid-template-columns: 24px 40px minmax(160px, 1fr) minmax(0, 2fr);
+    gap: 6px 12px;
+    align-items: start;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .entry:last-child { border-bottom: 0; }
+  .entry input[type="checkbox"] {
+    accent-color: var(--done);
+    width: 18px; height: 18px; margin: 3px 0 0;
+    cursor: pointer;
+  }
+  .entry .no {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    padding-top: 3px;
+  }
+  .entry .name {
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .entry .name .stars {
+    color: var(--warn);
+    font-size: 12px;
+    letter-spacing: .05em;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  .entry .name .minlv {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 13px;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  .entry.done .name { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+  .entry.done .no { opacity: .6; }
+  .sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+  }
+  .src {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    font-size: 13px;
+    padding: 3px 9px 3px 4px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .src .k {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    padding: 1px 6px;
+    border-radius: 5px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .src[data-k="dungeon"] .k, .src[data-k="trial"] .k, .src[data-k="raid"] .k,
+  .src[data-k="carnivale"] .k, .src[data-k="guildhest"] .k, .src[data-k="tdungeon"] .k {
+    background: var(--chip-inst-soft); color: var(--chip-inst);
+  }
+  .src[data-k="hunt"] .k { background: var(--chip-hunt-soft); color: var(--chip-hunt); }
+  .src[data-k="map"] .k { background: var(--chip-map-soft); color: var(--chip-map); }
+  .src[data-k="fate"] .k { background: var(--chip-fate-soft); color: var(--chip-fate); }
+  .src[data-k="leve"] .k { background: var(--chip-leve-soft); color: var(--chip-leve); }
+  .src[data-k="totem"] .k, .src[data-k="quest"] .k, .src[data-k="default"] .k { background: var(--chip-totem-soft); color: var(--chip-totem); }
+  .src .lv { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .src .ename { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--line-strong); }
+  .src .ename:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .src .maplink {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 12px;
+    text-decoration: none;
+    padding: 1px 7px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .src .maplink:hover { background: var(--accent-soft); }
+  .src .loc { color: var(--muted); }
+  .src .note { color: var(--muted); font-style: italic; }
+  .src.dim { opacity: .55; }
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 16px;
+    background: var(--surface);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius);
+  }
+  footer {
+    margin-top: 28px;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  footer a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 640px) {
+    .entry { grid-template-columns: 24px 1fr; }
+    .entry .no { display: none; }
+    .entry .sources { grid-column: 2 / -1; }
+    .field input[type="search"] { width: 100%; }
+    .seg button { max-width: 140px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Spellbook &amp; Bestiary</h1>
+      <div class="status" id="syncStatus" data-state="init">Loading saved progress…</div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="List">
+      <button type="button" role="tab" id="tab-blu" aria-selected="true">Blue Magic <span class="count" id="count-blu">0 / 124</span></button>
+      <button type="button" role="tab" id="tab-bst" aria-selected="false">Beasts <span class="count" id="count-bst">0 / 50</span></button>
+    </nav>
+  </header>
+
+  <section class="panel" aria-label="Filters">
+    <div class="row">
+      <span class="label">Character</span>
+      <div class="seg" id="charSeg">
+        <button type="button" id="char-c1" aria-pressed="true">Character 1</button>
+        <button type="button" id="char-c2" aria-pressed="false">Character 2</button>
+      </div>
+      <button type="button" class="ghost" id="renameBtn">Rename</button>
+    </div>
+    <div class="row">
+      <span class="label">Show</span>
+      <label class="field" for="levelInput">Level ≤
+        <input type="text" id="levelInput" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="any">
+      </label>
+      <label class="toggle"><input type="checkbox" id="hideDone"> Hide obtained</label>
+      <label class="toggle"><input type="checkbox" id="openWorldOnly"> Open world only <span class="hint">hides instance-only entries</span></label>
+      <label class="toggle"><input type="checkbox" id="rareCounts"> A/S hunts &amp; maps count as open world</label>
+      <label class="toggle"><input type="checkbox" id="groupByLoc"> Group by location</label>
+      <label class="field" for="searchInput"><input type="search" id="searchInput" placeholder="Search name, enemy, place"></label>
+      <button type="button" class="ghost" id="resetBtn">Reset</button>
+    </div>
+  </section>
+
+  <div class="summary" id="summary"></div>
+  <div class="bar"><span id="barFill"></span></div>
+  <main id="list" aria-live="polite"></main>
+
+  <footer>
+    Sources: <a href="https://ffxiv.consolegameswiki.com/wiki/Blue_Magic_Spellbook" target="_blank" rel="noopener">Blue Magic Spellbook</a> and
+    <a href="https://ffxiv.consolegameswiki.com/wiki/Master%27s_Bestiary" target="_blank" rel="noopener">Master's Bestiary</a> on the FFXIV Console Games Wiki, plus each spell's and beast's own page, captured 2026-09-21.
+    Levels shown are enemy or duty levels. Beasts require your level to be at or above the enemy's; open-world spells can be learned at any level, instance spells need the duty's level.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const DATA = /*__DATA__*/null;
+
+  const KIND = {
+    world:     { label: "Open world",       short: "Open world", instance: false, rare: false },
+    fate:      { label: "FATE",             short: "FATE",       instance: false, rare: false },
+    leve:      { label: "Levequest",        short: "Levequest",  instance: false, rare: false },
+    hunt:      { label: "Hunt mark",        short: "Hunt",       instance: false, rare: true  },
+    map:       { label: "Treasure map",     short: "Map",        instance: false, rare: true  },
+    dungeon:   { label: "Dungeon",          short: "Dungeon",    instance: true,  rare: false },
+    trial:     { label: "Trial",            short: "Trial",      instance: true,  rare: false },
+    raid:      { label: "Raid",             short: "Raid",       instance: true,  rare: false },
+    carnivale: { label: "Masked Carnivale", short: "Carnivale",  instance: true,  rare: false },
+    guildhest: { label: "Guildhest",        short: "Guildhest",  instance: true,  rare: false },
+    tdungeon:  { label: "Treasure dungeon", short: "Treasure dungeon", instance: true, rare: false },
+    totem:     { label: "Whalaqee totem",   short: "Totem",      instance: false, rare: false },
+    questmob:  { label: "Quest enemy",      short: "Quest mob",  instance: false, rare: false },
+    quest:     { label: "Quest reward",     short: "Quest",      instance: false, rare: false },
+    default:   { label: "Starting spell",   short: "Start",      instance: false, rare: false }
+  };
+  const LISTS = { blu: DATA.blu, bst: DATA.bst };
+  const CHARS = ["c1", "c2"];
+  const LS_UI = "sb.ui.v1";
+  const LS_PROG = "sb.progress.v1";
+  const LS_NAMES = "sb.names.v1";
+
+  // ---------- state ----------
+  const ui = Object.assign({
+    list: "blu", char: "c1", hideDone: false, openWorldOnly: false, rareCounts: false, groupByLoc: false,
+    search: "", levels: {}
+  }, readLS(LS_UI, {}));
+  const progress = readLS(LS_PROG, {});   // key "c1-blu" -> {id: true}
+  const names = Object.assign({ c1: "Character 1", c2: "Character 2" }, readLS(LS_NAMES, {}));
+  for (const c of CHARS) for (const l of Object.keys(LISTS)) progress[c + "-" + l] = progress[c + "-" + l] || {};
+
+  function readLS(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+  }
+  function writeLS(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage unavailable: page still works */ }
+  }
+  const progKey = () => ui.char + "-" + ui.list;
+  const levelKey = () => ui.char + "-" + ui.list;
+
+  // ---------- cloud sync (db capability) ----------
+  const $status = document.getElementById("syncStatus");
+  let db = null;
+  const inflight = {};   // key -> true while a write is in flight
+  const dirty = {};      // key -> true when local changed before db resolved
+  const timers = {};
+  let namesDirty = false;
+
+  function setStatus(state, text) { $status.dataset.state = state; $status.textContent = text; }
+
+  function queueWrite(key) {
+    writeLS(LS_PROG, progress);
+    if (!db) { dirty[key] = true; return; }
+    clearTimeout(timers[key]);
+    timers[key] = setTimeout(() => flush(key), 350);
+  }
+  async function flush(key) {
+    if (!db) return;
+    if (inflight[key]) { dirty[key] = true; return; }
+    inflight[key] = true; dirty[key] = false;
+    setStatus("saving", "Saving…");
+    try {
+      await db.doc("progress/" + key).set({ done: progress[key], updatedAt: new Date().toISOString() });
+      setStatus("cloud", "Saved to the cloud");
+    } catch (e) {
+      setStatus("error", "Could not save to cloud; kept on this device");
+    } finally {
+      inflight[key] = false;
+      if (dirty[key]) flush(key);
+    }
+  }
+  function queueNames() {
+    writeLS(LS_NAMES, names);
+    if (!db) { namesDirty = true; return; }
+    clearTimeout(timers.names);
+    timers.names = setTimeout(async () => {
+      try { await db.doc("settings/chars").set({ c1: names.c1, c2: names.c2 }); } catch (e) { /* local copy stands */ }
+    }, 400);
+  }
+
+  (async function connect() {
+    let ns = null;
+    try { ns = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { ns = null; }
+    if (!ns) { setStatus("local", "Saving on this device only (open the hosted link to sync)"); return; }
+    db = ns;
+    setStatus("cloud", "Saved to the cloud");
+    for (const key of Object.keys(progress)) {
+      db.doc("progress/" + key).onSnapshot((snap) => {
+        if (inflight[key] || dirty[key]) return;
+        if (snap.exists) {
+          const d = snap.data() || {};
+          progress[key] = (d.done && typeof d.done === "object") ? d.done : {};
+          writeLS(LS_PROG, progress);
+          render();
+        } else if (Object.keys(progress[key]).length) {
+          flush(key); // first visit from this device: push what was saved locally
+        }
+      }, () => setStatus("error", "Cloud sync lost; changes stay on this device"));
+      if (dirty[key]) flush(key);
+    }
+    db.doc("settings/chars").onSnapshot((snap) => {
+      if (namesDirty) { namesDirty = false; queueNames(); return; }
+      if (snap.exists) {
+        const d = snap.data() || {};
+        if (typeof d.c1 === "string") names.c1 = d.c1;
+        if (typeof d.c2 === "string") names.c2 = d.c2;
+        writeLS(LS_NAMES, names);
+        renderChars();
+      }
+    }, () => {});
+  })();
+
+  // ---------- helpers ----------
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  function isOpenWorldSource(s) {
+    const k = KIND[s.k] || KIND.world;
+    if (k.instance) return false;
+    if (!ui.rareCounts && (s.k === "map" || (s.k === "hunt" && s.rank !== "B"))) return false;
+    return true;
+  }
+  function entryAllowed(entry) {
+    return !ui.openWorldOnly || entry.sources.some(isOpenWorldSource);
+  }
+  function levelFilter() {
+    const v = ui.levels[levelKey()];
+    return (typeof v === "number" && v > 0) ? v : null;
+  }
+  function visibleSources(entry) {
+    const lv = levelFilter();
+    return entry.sources.filter((s) => lv === null || s.lv <= lv);
+  }
+  function matchesSearch(entry) {
+    const q = ui.search.trim().toLowerCase();
+    if (!q) return true;
+    if (entry.name.toLowerCase().includes(q)) return true;
+    return entry.sources.some((s) => (s.name + " " + s.loc + " " + (s.note || "")).toLowerCase().includes(q));
+  }
+  function groupKey(s) {
+    switch (s.k) {
+      case "map": return { key: "map", title: "Treasure maps", kind: "map", order: 3 };
+      case "totem": return { key: "totem", title: "Ul'dah — Whalaqee totems", kind: "totem", order: 2 };
+      case "default": return { key: "default", title: "Starting spell", kind: "default", order: 0 };
+      case "quest": return { key: "quest", title: "Kornago Gourd (quest reward)", kind: "quest", order: 2 };
+      case "carnivale": return { key: "carnivale", title: "Masked Carnivale (Ul'dah)", kind: "carnivale", order: 4 };
+      case "dungeon": case "trial": case "raid": case "guildhest": case "tdungeon":
+        return { key: s.k + ":" + s.loc, title: s.loc, kind: s.k, order: 4 };
+      default:
+        return { key: "zone:" + s.loc, title: s.loc, kind: "world", order: 1 };
+    }
+  }
+  function srcChip(s, dim) {
+    const k = KIND[s.k] || KIND.world;
+    const tag = s.k === "hunt" && s.rank ? s.rank + "-rank hunt" : k.short;
+    const lv = s.lvMax && s.lvMax !== s.lv ? "Lv " + s.lv + "–" + s.lvMax : "Lv " + s.lv;
+    let where = "";
+    if (s.k === "default") where = "";
+    else if (s.k === "totem" || s.k === "quest") where = s.note ? "" : "";
+    else where = esc(s.loc) + (s.xy ? " (" + esc(s.xy) + ")" : "");
+    const parts = ['<span class="k" title="' + esc(k.label) + '">' + esc(tag) + "</span>"];
+    if (s.t) {
+      const wiki = "https://ffxiv.consolegameswiki.com/wiki/" + encodeURIComponent(s.t.replace(/ /g, "_"));
+      parts.push('<a class="ename" href="' + esc(wiki) + '" target="_blank" rel="noopener" title="Open on the wiki">' + esc(s.name) + "</a>");
+    } else {
+      parts.push("<span>" + esc(s.name) + "</span>");
+    }
+    if (where) parts.push('<span class="loc">' + where + "</span>");
+    parts.push('<span class="lv">' + lv + "</span>");
+    if (s.note) parts.push('<span class="note">' + esc(s.note) + "</span>");
+    if (s.img) parts.push('<a class="maplink" href="' + esc(s.img) + '" target="_blank" rel="noopener" title="Location map on the wiki">Map</a>');
+    return '<span class="src' + (dim ? " dim" : "") + '" data-k="' + esc(s.k) + '">' + parts.join("") + "</span>";
+  }
+  let rowSeq = 0;
+  function entryRow(entry, sources, allSources) {
+    const done = !!progress[progKey()][entry.id];
+    const stars = entry.rank ? '<span class="stars" title="Rank ' + entry.rank + '">' + "★".repeat(entry.rank) + "</span>" : "";
+    const minlv = entry.minLv > 1 ? '<span class="minlv" title="Minimum level to obtain">min ' + entry.minLv + "</span>" : "";
+    const id = "e-" + ui.list + "-" + entry.id + "-" + (rowSeq++);
+    const chips = sources.map((s) => srcChip(s, false)).join("");
+    const hidden = allSources && allSources.length > sources.length
+      ? '<span class="src dim" title="Sources above your level filter">+' + (allSources.length - sources.length) + " above level</span>" : "";
+    return '<div class="entry' + (done ? " done" : "") + '" data-id="' + entry.id + '">' +
+      '<input type="checkbox" id="' + id + '" ' + (done ? "checked" : "") + ' aria-label="Obtained: ' + esc(entry.name) + '">' +
+      '<span class="no">' + entry.id + "</span>" +
+      '<label class="name" for="' + id + '">' + esc(entry.name) + stars + minlv + "</label>" +
+      '<div class="sources">' + chips + hidden + "</div></div>";
+  }
+
+  // ---------- render ----------
+  const $list = document.getElementById("list");
+  const $summary = document.getElementById("summary");
+  const $bar = document.getElementById("barFill");
+
+  function renderChars() {
+    for (const c of CHARS) {
+      const b = document.getElementById("char-" + c);
+      b.textContent = names[c];
+      b.setAttribute("aria-pressed", String(ui.char === c));
+    }
+  }
+  function renderCounts() {
+    for (const l of Object.keys(LISTS)) {
+      const done = Object.values(progress[ui.char + "-" + l]).filter(Boolean).length;
+      document.getElementById("count-" + l).textContent = done + " / " + LISTS[l].length;
+    }
+  }
+  function render() {
+    rowSeq = 0;
+    document.documentElement.dataset.list = ui.list;
+    document.getElementById("tab-blu").setAttribute("aria-selected", String(ui.list === "blu"));
+    document.getElementById("tab-bst").setAttribute("aria-selected", String(ui.list === "bst"));
+    renderChars();
+    renderCounts();
+    const lvInput = document.getElementById("levelInput");
+    const lv = levelFilter();
+    if (document.activeElement !== lvInput) lvInput.value = lv === null ? "" : String(lv);
+
+    const entries = LISTS[ui.list];
+    const done = progress[progKey()];
+    const doneCount = entries.filter((e) => done[e.id]).length;
+    const grouped = ui.groupByLoc || lv !== null;
+    const rows = [];
+    for (const e of entries) {
+      if (ui.hideDone && done[e.id]) continue;
+      if (!entryAllowed(e)) continue;
+      if (!matchesSearch(e)) continue;
+      const vis = visibleSources(e);
+      if (!vis.length) continue;
+      rows.push({ e, vis });
+    }
+
+    let html = "";
+    if (!rows.length) {
+      html = '<div class="empty">Nothing matches these filters' + (ui.hideDone && doneCount === entries.length ? " — everything here is obtained." : ".") + "</div>";
+    } else if (grouped) {
+      const groups = new Map();
+      for (const { e, vis } of rows) {
+        for (const s of vis) {
+          const g = groupKey(s);
+          if (!groups.has(g.key)) groups.set(g.key, { ...g, items: new Map(), minLv: Infinity });
+          const grp = groups.get(g.key);
+          grp.minLv = Math.min(grp.minLv, s.lv);
+          if (!grp.items.has(e.id)) grp.items.set(e.id, { e, srcs: [] });
+          grp.items.get(e.id).srcs.push(s);
+        }
+      }
+      const list = [...groups.values()].sort((a, b) => a.order - b.order || a.minLv - b.minLv || a.title.localeCompare(b.title));
+      for (const g of list) {
+        const k = KIND[g.kind] || KIND.world;
+        const items = [...g.items.values()].sort((a, b) => a.e.id - b.e.id);
+        html += '<section class="group"><header><h2>' + esc(g.title) + "</h2>" +
+          '<span class="meta">' + esc(k.label) + " · " + items.length + (items.length === 1 ? " entry" : " entries") +
+          (isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + "</span></header>";
+        for (const it of items) html += entryRow(it.e, it.srcs, null);
+        html += "</section>";
+      }
+    } else {
+      html = '<section class="group">';
+      for (const { e, vis } of rows) html += entryRow(e, lv !== null ? vis : e.sources, lv !== null ? e.sources : null);
+      html += "</section>";
+    }
+    $list.innerHTML = html;
+
+    const shown = rows.length;
+    $summary.innerHTML =
+      "<span><strong>" + esc(names[ui.char]) + "</strong> · " + (ui.list === "blu" ? "Blue Magic" : "Beasts") +
+      " · obtained <strong>" + doneCount + "</strong> of " + entries.length + " · <strong>" + (entries.length - doneCount) + "</strong> to go</span>" +
+      "<span>Showing " + shown + (grouped ? " grouped by location" : "") + (lv !== null ? " at level ≤ " + lv : "") + "</span>";
+    $bar.style.width = (entries.length ? (100 * doneCount / entries.length) : 0) + "%";
+  }
+
+  // ---------- events ----------
+  function saveUI() { writeLS(LS_UI, ui); }
+
+  $list.addEventListener("change", (ev) => {
+    const cb = ev.target;
+    if (!(cb instanceof HTMLInputElement) || cb.type !== "checkbox") return;
+    const id = Number(cb.closest(".entry").dataset.id);
+    const key = progKey();
+    if (cb.checked) progress[key][id] = true; else delete progress[key][id];
+    queueWrite(key);
+    render();
+  });
+  document.getElementById("tab-blu").addEventListener("click", () => { ui.list = "blu"; saveUI(); render(); });
+  document.getElementById("tab-bst").addEventListener("click", () => { ui.list = "bst"; saveUI(); render(); });
+  for (const c of CHARS) document.getElementById("char-" + c).addEventListener("click", () => { ui.char = c; saveUI(); render(); });
+  document.getElementById("renameBtn").addEventListener("click", () => {
+    const seg = document.getElementById("charSeg");
+    const btn = document.getElementById("char-" + ui.char);
+    const input = document.createElement("input");
+    input.type = "text"; input.value = names[ui.char]; input.maxLength = 40; input.setAttribute("aria-label", "Character name");
+    seg.replaceChild(input, btn);
+    input.focus(); input.select();
+    let finished = false;
+    const finish = (commit) => {
+      if (finished) return; finished = true;
+      const v = input.value.trim();
+      if (commit && v) { names[ui.char] = v; queueNames(); }
+      seg.replaceChild(btn, input);
+      render();
+    };
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") finish(true); if (e.key === "Escape") finish(false); });
+    input.addEventListener("blur", () => finish(true));
+  });
+  const $level = document.getElementById("levelInput");
+  $level.addEventListener("input", () => {
+    $level.value = $level.value.replace(/[^0-9]/g, "");
+    const v = parseInt($level.value, 10);
+    if (isFinite(v) && v > 0) ui.levels[levelKey()] = v; else delete ui.levels[levelKey()];
+    saveUI(); render();
+  });
+  const $rare = document.getElementById("rareCounts");
+  for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) {
+    const el = document.getElementById(id);
+    el.checked = !!ui[id];
+    el.addEventListener("change", () => { ui[id] = el.checked; $rare.disabled = !ui.openWorldOnly; saveUI(); render(); });
+  }
+  $rare.disabled = !ui.openWorldOnly;
+  const $search = document.getElementById("searchInput");
+  $search.value = ui.search || "";
+  $search.addEventListener("input", () => { ui.search = $search.value; saveUI(); render(); });
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    ui.hideDone = ui.openWorldOnly = ui.rareCounts = ui.groupByLoc = false;
+    ui.search = ""; delete ui.levels[levelKey()];
+    for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) document.getElementById(id).checked = false;
+    $rare.disabled = true;
+    $search.value = ""; $level.value = "";
+    saveUI(); render();
+  });
+
+  render();
+})();
+</script>
