@@ -222,40 +222,60 @@
     color: var(--muted);
     font-weight: 600;
   }
-  .seg {
-    display: inline-flex;
-    border: 1px solid var(--line-strong);
-    border-radius: 8px;
-    overflow: hidden;
+  .chars {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 12px;
   }
-  .seg button {
+  .chars button[role="tab"] {
     appearance: none;
-    border: 0;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
     background: var(--surface);
-    color: var(--ink);
+    color: var(--muted);
     font: inherit;
-    font-weight: 500;
-    padding: 7px 14px;
     cursor: pointer;
-    max-width: 220px;
+    min-width: 0;
+  }
+  .chars button[role="tab"]:hover { border-color: var(--line-strong); }
+  .chars button[aria-selected="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .chars .cname {
+    font-family: "Cinzel", "Times New Roman", serif;
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: .01em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .seg button + button { border-left: 1px solid var(--line-strong); }
-  .seg button[aria-pressed="true"] {
-    background: var(--accent);
-    color: var(--accent-ink);
+  .chars .csub {
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
   }
-  .seg input {
+  .chars button[aria-selected="true"] .csub { color: var(--accent); }
+  .chars input {
     font: inherit;
-    padding: 6px 10px;
-    border: 0;
-    border-left: 1px solid var(--line-strong);
+    padding: 12px 16px;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
     background: var(--surface);
     color: var(--ink);
-    width: 180px;
+    min-width: 0;
   }
+  .chars .ghost { align-self: center; }
   .ghost {
     appearance: none;
     background: transparent;
@@ -514,7 +534,8 @@
     .entry .no { display: none; }
     .entry .sources { grid-column: 2 / -1; }
     .field input[type="search"] { width: 100%; }
-    .seg button { max-width: 140px; }
+    .chars { grid-template-columns: 1fr 1fr; }
+    .chars .ghost { grid-column: 1 / -1; justify-self: start; }
   }
 </style>
 
@@ -524,20 +545,21 @@
       <h1>Spellbook &amp; Bestiary</h1>
       <div class="status" id="syncStatus" data-state="init">Loading saved progress…</div>
     </div>
-    <nav class="tabs" role="tablist" aria-label="List">
-      <button type="button" role="tab" id="tab-blu" aria-selected="true">Blue Magic <span class="count" id="count-blu">0 / 124</span></button>
-      <button type="button" role="tab" id="tab-bst" aria-selected="false">Beasts <span class="count" id="count-bst">0 / 50</span></button>
-    </nav>
   </header>
 
-  <section class="panel" aria-label="Filters">
+  <nav class="chars" id="charSeg" role="tablist" aria-label="Character">
+    <button type="button" role="tab" id="char-c1" aria-selected="true"><span class="cname">Character 1</span><span class="csub" id="csub-c1"></span></button>
+    <button type="button" role="tab" id="char-c2" aria-selected="false"><span class="cname">Character 2</span><span class="csub" id="csub-c2"></span></button>
+    <button type="button" class="ghost" id="renameBtn">Rename</button>
+  </nav>
+
+  <section class="panel" aria-label="List and filters">
     <div class="row">
-      <span class="label">Character</span>
-      <div class="seg" id="charSeg">
-        <button type="button" id="char-c1" aria-pressed="true">Character 1</button>
-        <button type="button" id="char-c2" aria-pressed="false">Character 2</button>
+      <span class="label">List</span>
+      <div class="tabs" role="tablist" aria-label="List">
+        <button type="button" role="tab" id="tab-blu" aria-selected="true">Blue Magic <span class="count" id="count-blu">0 / 124</span></button>
+        <button type="button" role="tab" id="tab-bst" aria-selected="false">Beasts <span class="count" id="count-bst">0 / 50</span></button>
       </div>
-      <button type="button" class="ghost" id="renameBtn">Rename</button>
     </div>
     <div class="row">
       <span class="label">Show</span>
@@ -787,8 +809,11 @@
   function renderChars() {
     for (const c of CHARS) {
       const b = document.getElementById("char-" + c);
-      b.textContent = names[c];
-      b.setAttribute("aria-pressed", String(ui.char === c));
+      b.querySelector(".cname").textContent = names[c];
+      b.setAttribute("aria-selected", String(ui.char === c));
+      const blu = Object.values(progress[c + "-blu"]).filter(Boolean).length;
+      const bst = Object.values(progress[c + "-bst"]).filter(Boolean).length;
+      document.getElementById("csub-" + c).textContent = "Blue Magic " + blu + " / " + LISTS.blu.length + " · Beasts " + bst + " / " + LISTS.bst.length;
     }
   }
   function renderCounts() {
