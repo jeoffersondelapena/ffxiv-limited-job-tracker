@@ -16,6 +16,9 @@
     --done-soft: #e2f1e9;
     --warn: #9a6400;
     --warn-soft: #fbf0d6;
+    --danger: #c2413d;
+    --danger-ink: #ffffff;
+    --danger-soft: #fbe5e4;
     --chip-inst: #5b6578;
     --chip-inst-soft: #e9edf3;
     --chip-hunt: #a8541a;
@@ -51,6 +54,9 @@
       --done-soft: #16301f;
       --warn: #e5b45a;
       --warn-soft: #3a2d10;
+      --danger: #f08a86;
+      --danger-ink: #1a0f0f;
+      --danger-soft: #3d1d1c;
       --chip-inst: #aab4c6;
       --chip-inst-soft: #262e3b;
       --chip-hunt: #f0a070;
@@ -85,6 +91,9 @@
     --done-soft: #16301f;
     --warn: #e5b45a;
     --warn-soft: #3a2d10;
+    --danger: #f08a86;
+    --danger-ink: #1a0f0f;
+    --danger-soft: #3d1d1c;
     --chip-inst: #aab4c6;
     --chip-inst-soft: #262e3b;
     --chip-hunt: #f0a070;
@@ -260,6 +269,47 @@
     cursor: pointer;
   }
   .ghost:hover { background: var(--accent-soft); }
+  .ghost.danger { color: var(--danger); }
+  .ghost.danger:hover { background: var(--danger-soft); }
+  .solid-danger {
+    appearance: none;
+    font: inherit;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--danger);
+    background: var(--danger);
+    color: var(--danger-ink);
+    cursor: pointer;
+  }
+  .solid-danger:disabled { opacity: .45; cursor: not-allowed; }
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 20px 22px;
+    width: min(92vw, 420px);
+    box-shadow: var(--shadow);
+  }
+  dialog::backdrop { background: rgba(10, 14, 20, .55); }
+  dialog h2 {
+    font-family: "Cinzel", "Times New Roman", serif;
+    font-size: 18px;
+    margin: 0 0 8px;
+  }
+  dialog p { margin: 0 0 14px; line-height: 1.5; }
+  dialog input[type="text"] {
+    font: inherit;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  dialog .actions { display: flex; justify-content: flex-end; gap: 8px; }
   .field {
     display: inline-flex;
     align-items: center;
@@ -501,7 +551,24 @@
       <label class="field" for="searchInput"><input type="search" id="searchInput" placeholder="Search name, enemy, place"></label>
       <button type="button" class="ghost" id="resetBtn">Reset</button>
     </div>
+    <div class="row">
+      <span class="label">Progress</span>
+      <button type="button" class="ghost danger" id="clearBtn">Uncheck all…</button>
+      <button type="button" class="ghost" id="undoBtn" hidden>Undo the last uncheck-all</button>
+    </div>
   </section>
+
+  <dialog id="clearDialog">
+    <form id="clearForm">
+      <h2>Uncheck everything?</h2>
+      <p id="clearText"></p>
+      <input type="text" id="clearInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="reset" aria-label="Type reset to confirm">
+      <div class="actions">
+        <button type="button" class="ghost" id="clearCancel">Cancel</button>
+        <button type="submit" class="solid-danger" id="clearConfirm" disabled>Uncheck all</button>
+      </div>
+    </form>
+  </dialog>
 
   <div class="summary" id="summary"></div>
   <div class="bar"><span id="barFill"></span></div>
@@ -793,12 +860,16 @@
       " · obtained <strong>" + doneCount + "</strong> of " + entries.length + " · <strong>" + (entries.length - doneCount) + "</strong> to go</span>" +
       "<span>Showing " + shown + (grouped ? " grouped by location" : "") + (lv !== null ? " at level ≤ " + lv : "") + "</span>";
     $bar.style.width = (entries.length ? (100 * doneCount / entries.length) : 0) + "%";
+    document.getElementById("clearBtn").textContent = "Uncheck all " + (ui.list === "blu" ? "Blue Magic" : "Beasts") + " for " + names[ui.char] + "…";
+    document.getElementById("undoBtn").hidden = !(lastCleared && lastCleared.key === progKey());
   }
 
   // ---------- events ----------
   function saveUI() { writeLS(LS_UI, ui); }
 
+  let lastCleared = null;
   function toggleEntry(id, value) {
+    lastCleared = null;
     const key = progKey();
     const cur = Object.assign({}, progress[key]);
     const next = value === undefined ? !cur[id] : !!value;
@@ -865,6 +936,47 @@
     $rare.disabled = true;
     $search.value = ""; $level.value = "";
     saveUI(); render();
+  });
+
+  const $dlg = document.getElementById("clearDialog");
+  const $clearInput = document.getElementById("clearInput");
+  const $clearConfirm = document.getElementById("clearConfirm");
+  function clearAll() {
+    const key = progKey();
+    lastCleared = { key, map: Object.assign({}, progress[key]) };
+    progress[key] = {};
+    queueWrite(key);
+    render();
+  }
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    const entries = LISTS[ui.list];
+    const doneCount = entries.filter((e) => progress[progKey()][e.id]).length;
+    const what = (ui.list === "blu" ? "Blue Magic" : "Beasts") + " for " + names[ui.char];
+    if (!$dlg.showModal) {
+      const v = window.prompt("Uncheck all " + doneCount + " obtained entries in " + what + "? Type reset to confirm.");
+      if (v && v.trim().toLowerCase() === "reset") clearAll();
+      return;
+    }
+    document.getElementById("clearText").textContent =
+      "This unchecks all " + doneCount + " obtained " + (doneCount === 1 ? "entry" : "entries") + " in " + what +
+      ". Filters and the other lists stay as they are. Type reset to confirm.";
+    $clearInput.value = ""; $clearConfirm.disabled = true;
+    $dlg.showModal(); $clearInput.focus();
+  });
+  $clearInput.addEventListener("input", () => { $clearConfirm.disabled = $clearInput.value.trim().toLowerCase() !== "reset"; });
+  document.getElementById("clearForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    if ($clearConfirm.disabled) return;
+    $dlg.close();
+    clearAll();
+  });
+  document.getElementById("clearCancel").addEventListener("click", () => $dlg.close());
+  document.getElementById("undoBtn").addEventListener("click", () => {
+    if (!lastCleared) return;
+    const { key, map } = lastCleared; lastCleared = null;
+    progress[key] = Object.assign({}, map);
+    queueWrite(key);
+    render();
   });
 
   render();
