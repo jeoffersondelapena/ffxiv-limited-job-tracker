@@ -19,3 +19,7 @@ Then republish `tracker.html` to the same hosted page (republishing keeps saved 
 - Saved checks live in the hosted page's database (`progress/<c1|c2>-<blu|bst>`), not in this repo. Republishing never touches them.
 - `build_data.py` drops Savage, Unreal, Ultimate and level > 80 sources for Blue Mage (job cap), and only the hard-coded zone list counts as open world.
 - Download caches (`pages/`, `enemies/`, `places/`) are re-fetched when missing; delete them to force a full refresh.
+
+## Testing page changes
+
+`python3 test_harness.py` writes `tracker.test.html`, the page plus a fake cloud database that returns frozen snapshots like the real one. Open it locally, toggle entries, and check `window.__writes` / `window.__errors` in the console. Automated browser clicks do not reach the hosted page's frame, so this harness is the reliable check.
