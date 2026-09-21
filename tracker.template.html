@@ -162,6 +162,33 @@
   .status[data-state="saving"]::before { background: var(--warn); }
   .status[data-state="local"]::before { background: var(--warn); }
   .status[data-state="error"]::before { background: #d04a4a; }
+  .context-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    background: var(--surface);
+    border-bottom: 1px solid var(--accent);
+    box-shadow: var(--shadow);
+    font-size: 13.5px;
+  }
+  .context-bar .cb-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .context-bar .cb-char {
+    font-family: "Cinzel", "Times New Roman", serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--accent);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    min-width: 0;
+  }
+  .context-bar .cb-list { font-weight: 600; white-space: nowrap; }
+  .context-bar .cb-sep { color: var(--muted); }
+  .context-bar .status { margin: 0 0 0 auto; white-space: nowrap; }
+  @media (max-width: 640px) { .context-bar .cb-label { display: none; } .context-bar .status { font-size: 0; gap: 0; } .context-bar .status::before { width: 10px; height: 10px; } }
 
   .tabs {
     display: flex;
@@ -596,6 +623,14 @@
   <div class="bar"><span id="barFill"></span></div>
   <main id="list" aria-live="polite"></main>
 
+  <div class="context-bar" id="contextBar" hidden aria-hidden="true">
+    <span class="cb-label">Editing</span>
+    <span class="cb-char" id="cbChar"></span>
+    <span class="cb-sep">·</span>
+    <span class="cb-list" id="cbList"></span>
+    <span class="status" id="syncFloat" data-state="init"></span>
+  </div>
+
   <footer>
     Sources: <a href="https://ffxiv.consolegameswiki.com/wiki/Blue_Magic_Spellbook" target="_blank" rel="noopener">Blue Magic Spellbook</a> and
     <a href="https://ffxiv.consolegameswiki.com/wiki/Master%27s_Bestiary" target="_blank" rel="noopener">Master's Bestiary</a> on the FFXIV Console Games Wiki, plus each spell's and beast's own page, captured 2026-09-21.
@@ -657,7 +692,19 @@
   const timers = {};
   let namesDirty = false;
 
-  function setStatus(state, text) { $status.dataset.state = state; $status.textContent = text; }
+  const $float = document.getElementById("syncFloat");
+  function setStatus(state, text) {
+    $status.dataset.state = state; $status.textContent = text;
+    $float.dataset.state = state; $float.textContent = text;
+  }
+  // Pin a context bar to the top while the character tabs are scrolled out of view.
+  const $ctx = document.getElementById("contextBar");
+  const $chars = document.getElementById("charSeg");
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver((entries) => { $ctx.hidden = entries[0].isIntersecting; }).observe($chars);
+  } else {
+    window.addEventListener("scroll", () => { $ctx.hidden = $chars.getBoundingClientRect().bottom > 0; }, { passive: true });
+  }
 
   function queueWrite(key) {
     writeLS(LS_PROG, progress);
@@ -886,6 +933,8 @@
       "<span>Showing " + shown + (grouped ? " grouped by location" : "") + (lv !== null ? " at level ≤ " + lv : "") + "</span>";
     $bar.style.width = (entries.length ? (100 * doneCount / entries.length) : 0) + "%";
     document.getElementById("clearBtn").textContent = "Uncheck all " + (ui.list === "blu" ? "Blue Magic" : "Beasts") + " for " + names[ui.char] + "…";
+    document.getElementById("cbChar").textContent = names[ui.char];
+    document.getElementById("cbList").textContent = ui.list === "blu" ? "Blue Magic" : "Beasts";
     document.getElementById("undoBtn").hidden = !(lastCleared && lastCleared.key === progKey());
   }
 
