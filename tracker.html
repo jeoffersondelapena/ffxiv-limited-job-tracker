@@ -671,7 +671,6 @@
       <span class="label">Progress</span>
       <button type="button" class="ghost danger" id="clearBtn">Uncheck all…</button>
       <button type="button" class="ghost" id="undoBtn" hidden>Undo the last uncheck-all</button>
-      <label class="toggle"><input type="checkbox" id="confirmChecks"> Confirm each check</label>
     </div>
   </section>
 
@@ -751,7 +750,7 @@
 
   // ---------- state ----------
   const ui = Object.assign({
-    list: "blu", char: "c1", hideDone: false, openWorldOnly: false, rareCounts: false, groupByLoc: false, confirmChecks: true,
+    list: "blu", char: "c1", hideDone: false, openWorldOnly: false, rareCounts: false, groupByLoc: false,
     search: "", levels: {}
   }, readLS(LS_UI, {}));
   const progress = readLS(LS_PROG, {});   // key "c1-blu" -> {id: true}
@@ -807,7 +806,7 @@
   }
 
   // Every synced document: how to build its body, how to adopt a cloud snapshot, and whether this device has anything worth pushing.
-  const SYNCED_UI = ["char", "list", "hideDone", "openWorldOnly", "rareCounts", "groupByLoc", "confirmChecks"];
+  const SYNCED_UI = ["char", "list", "hideDone", "openWorldOnly", "rareCounts", "groupByLoc"];
   const DEFAULT_NAMES = { c1: "Character 1", c2: "Character 2" };
   const DOCS = {};
   for (const key of Object.keys(progress)) {
@@ -1061,7 +1060,7 @@
   // ---------- events ----------
   function saveUI() { queueWrite("ui"); }
   function syncControls() {
-    for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc", "confirmChecks"]) document.getElementById(id).checked = !!ui[id];
+    for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) document.getElementById(id).checked = !!ui[id];
     document.getElementById("rareCounts").disabled = !ui.openWorldOnly;
   }
 
@@ -1081,7 +1080,6 @@
   let pendingToggle = null, confirmed = false;
   function requestToggle(id, value) {
     const next = value === undefined ? !progress[progKey()][id] : !!value;
-    if (!ui.confirmChecks) { toggleEntry(id, next); return; }
     const entry = LISTS[ui.list].find((e) => e.id === id);
     const where = names[ui.char] + " · " + (ui.list === "blu" ? "Blue Magic" : "Beasts");
     if (!$cdlg.showModal) {
@@ -1144,7 +1142,7 @@
     saveUI(); render();
   });
   const $rare = document.getElementById("rareCounts");
-  for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc", "confirmChecks"]) {
+  for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) {
     const el = document.getElementById(id);
     el.addEventListener("change", () => { ui[id] = el.checked; syncControls(); saveUI(); render(); });
   }
