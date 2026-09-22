@@ -384,6 +384,17 @@
     cursor: pointer;
   }
   .solid-danger:disabled { opacity: .45; cursor: not-allowed; }
+  .solid-accent {
+    appearance: none;
+    font: inherit;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+  }
   dialog {
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -650,7 +661,7 @@
         <input type="text" id="levelInput" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="any">
       </label>
       <label class="toggle"><input type="checkbox" id="hideDone"> Hide obtained</label>
-      <label class="toggle"><input type="checkbox" id="openWorldOnly"> Open world only <span class="hint">hides instance-only entries</span></label>
+      <label class="toggle"><input type="checkbox" id="openWorldOnly"> Open world only <span class="hint">hides instance-only entries, dims instance sources</span></label>
       <label class="toggle"><input type="checkbox" id="rareCounts"> A/S hunts &amp; maps count as open world</label>
       <label class="toggle"><input type="checkbox" id="groupByLoc"> Group by location</label>
       <label class="field" for="searchInput"><input type="search" id="searchInput" placeholder="Search name, enemy, place"></label>
@@ -660,8 +671,20 @@
       <span class="label">Progress</span>
       <button type="button" class="ghost danger" id="clearBtn">Uncheck all…</button>
       <button type="button" class="ghost" id="undoBtn" hidden>Undo the last uncheck-all</button>
+      <label class="toggle"><input type="checkbox" id="confirmChecks"> Confirm each check</label>
     </div>
   </section>
+
+  <dialog id="confirmDialog">
+    <form id="confirmForm">
+      <h2 id="confirmTitle">Mark as obtained?</h2>
+      <p id="confirmText"></p>
+      <div class="actions">
+        <button type="button" class="ghost" id="confirmCancel">Cancel</button>
+        <button type="submit" class="solid-accent" id="confirmOk">Yes</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="clearDialog">
     <form id="clearForm">
@@ -728,7 +751,7 @@
 
   // ---------- state ----------
   const ui = Object.assign({
-    list: "blu", char: "c1", hideDone: false, openWorldOnly: false, rareCounts: false, groupByLoc: false,
+    list: "blu", char: "c1", hideDone: false, openWorldOnly: false, rareCounts: false, groupByLoc: false, confirmChecks: true,
     search: "", levels: {}
   }, readLS(LS_UI, {}));
   const progress = readLS(LS_PROG, {});   // key "c1-blu" -> {id: true}
@@ -784,7 +807,7 @@
   }
 
   // Every synced document: how to build its body, how to adopt a cloud snapshot, and whether this device has anything worth pushing.
-  const SYNCED_UI = ["char", "list", "hideDone", "openWorldOnly", "rareCounts", "groupByLoc"];
+  const SYNCED_UI = ["char", "list", "hideDone", "openWorldOnly", "rareCounts", "groupByLoc", "confirmChecks"];
   const DEFAULT_NAMES = { c1: "Character 1", c2: "Character 2" };
   const DOCS = {};
   for (const key of Object.keys(progress)) {
@@ -930,9 +953,10 @@
     const stars = entry.rank ? '<span class="stars" title="Rank ' + entry.rank + '">' + "★".repeat(entry.rank) + "</span>" : "";
     const minlv = entry.minLv > 1 ? '<span class="minlv" title="Minimum level to obtain">min ' + entry.minLv + "</span>" : "";
     const id = "e-" + ui.list + "-" + entry.id + "-" + (rowSeq++);
-    const chips = sources.map((s) => srcChip(s, false)).join("");
+    const chips = sources.map((s) => srcChip(s, ui.openWorldOnly && !isOpenWorldSource(s))).join("");
+    const lvf = levelFilter();
     const hidden = allSources && allSources.length > sources.length
-      ? '<span class="src dim" title="Sources above your level filter">+' + (allSources.length - sources.length) + " above level</span>" : "";
+      ? '<span class="src dim" title="Hidden by your level filter">+' + (allSources.length - sources.length) + " more above Lv " + lvf + "</span>" : "";
     return '<div class="entry' + (done ? " done" : "") + '" data-id="' + entry.id + '">' +
       '<input type="checkbox" id="' + id + '" ' + (done ? "checked" : "") + ' aria-label="Obtained: ' + esc(entry.name) + '">' +
       '<span class="no">' + entry.id + "</span>" +
@@ -994,6 +1018,7 @@
       const groups = new Map();
       for (const { e, vis } of rows) {
         for (const s of vis) {
+          if (ui.openWorldOnly && !isOpenWorldSource(s)) continue; // outdoor route planning: no instance groups
           const g = groupKey(s);
           if (!groups.has(g.key)) groups.set(g.key, { ...g, items: new Map(), minLv: Infinity });
           const grp = groups.get(g.key);
@@ -1036,7 +1061,7 @@
   // ---------- events ----------
   function saveUI() { queueWrite("ui"); }
   function syncControls() {
-    for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) document.getElementById(id).checked = !!ui[id];
+    for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc", "confirmChecks"]) document.getElementById(id).checked = !!ui[id];
     document.getElementById("rareCounts").disabled = !ui.openWorldOnly;
   }
 
@@ -1051,18 +1076,44 @@
     queueWrite(key);
     render();
   }
+  const $cdlg = document.getElementById("confirmDialog");
+  const $confirmOk = document.getElementById("confirmOk");
+  let pendingToggle = null, confirmed = false;
+  function requestToggle(id, value) {
+    const next = value === undefined ? !progress[progKey()][id] : !!value;
+    if (!ui.confirmChecks) { toggleEntry(id, next); return; }
+    const entry = LISTS[ui.list].find((e) => e.id === id);
+    const where = names[ui.char] + " · " + (ui.list === "blu" ? "Blue Magic" : "Beasts");
+    if (!$cdlg.showModal) {
+      if (window.confirm((next ? "Mark obtained: " : "Mark NOT obtained: ") + entry.name + " (" + where + ")?")) toggleEntry(id, next); else render();
+      return;
+    }
+    pendingToggle = { id, next }; confirmed = false;
+    document.getElementById("confirmTitle").textContent = next ? "Mark as obtained?" : "Mark as not obtained?";
+    document.getElementById("confirmText").textContent = entry.name + " for " + where + ".";
+    $confirmOk.textContent = next ? "Yes, obtained" : "Yes, not obtained";
+    $cdlg.showModal(); $confirmOk.focus();
+  }
+  document.getElementById("confirmForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    confirmed = true; $cdlg.close();
+    if (pendingToggle) toggleEntry(pendingToggle.id, pendingToggle.next);
+    pendingToggle = null;
+  });
+  document.getElementById("confirmCancel").addEventListener("click", () => $cdlg.close());
+  $cdlg.addEventListener("close", () => { if (!confirmed) { pendingToggle = null; render(); } }); // cancel or Escape: redraw so a natively flipped box snaps back
   $list.addEventListener("change", (ev) => {
     const cb = ev.target;
     if (!cb || cb.type !== "checkbox") return;
     const row = cb.closest(".entry");
-    if (row) toggleEntry(Number(row.dataset.id), cb.checked);
+    if (row) requestToggle(Number(row.dataset.id), cb.checked);
   });
   $list.addEventListener("click", (ev) => {
     const lbl = ev.target.closest("label.name");
     if (!lbl || ev.target.closest("a")) return;
     ev.preventDefault();
     const row = lbl.closest(".entry");
-    if (row) toggleEntry(Number(row.dataset.id));
+    if (row) requestToggle(Number(row.dataset.id));
   });
   document.getElementById("tab-blu").addEventListener("click", () => { ui.list = "blu"; saveUI(); render(); });
   document.getElementById("tab-bst").addEventListener("click", () => { ui.list = "bst"; saveUI(); render(); });
@@ -1093,7 +1144,7 @@
     saveUI(); render();
   });
   const $rare = document.getElementById("rareCounts");
-  for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) {
+  for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc", "confirmChecks"]) {
     const el = document.getElementById(id);
     el.addEventListener("change", () => { ui[id] = el.checked; syncControls(); saveUI(); render(); });
   }
