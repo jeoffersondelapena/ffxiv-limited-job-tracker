@@ -212,6 +212,8 @@
     color: var(--accent-ink);
     white-space: nowrap;
   }
+  .context-bar .cb-level { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+  .context-bar .cb-level.complete { background: var(--done); color: #ffffff; border-color: var(--done); }
   .context-bar .status { margin: 0 0 0 auto; white-space: nowrap; }
   .to-top {
     position: fixed;
@@ -476,6 +478,17 @@
     font-variant-numeric: tabular-nums;
   }
   .summary strong { color: var(--ink); font-weight: 600; }
+  .summary .done-inline { color: var(--done); font-weight: 600; }
+  .summary .lvl-ind {
+    flex-basis: 100%;
+    padding: 7px 12px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+  .summary .lvl-ind.complete { background: var(--done-soft); border-color: var(--done); color: var(--done); }
+  .summary .lvl-ind.complete strong { color: var(--done); }
   .bar {
     height: 6px;
     border-radius: 999px;
@@ -510,6 +523,18 @@
     letter-spacing: .01em;
   }
   .group > header .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .group.complete > header { background: var(--done-soft); }
+  .group.complete > header h2 { color: var(--done); }
+  .done-badge {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--done);
+    border: 1px solid var(--done);
+    border-radius: 999px;
+    padding: 1px 9px;
+    white-space: nowrap;
+  }
   .entry {
     display: grid;
     grid-template-columns: 24px 40px minmax(160px, 1fr) minmax(0, 2fr);
@@ -708,6 +733,7 @@
     <img class="jicon" id="cbIcon" alt="" src="data:image/png;base64,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">
     <span class="cb-list" id="cbList"></span>
     <span class="cb-count" id="cbCount" title="Obtained / total"></span>
+    <span class="cb-count cb-level" id="cbLevel" title="Obtained / obtainable at your level filter" hidden></span>
     <span class="status" id="syncFloat" data-state="init"></span>
   </div>
   <button type="button" class="to-top" id="toTopBtn" hidden aria-label="Back to top">↑ Top</button>
@@ -906,11 +932,11 @@
     const lv = levelFilter();
     return entry.sources.filter((s) => lv === null || s.lv <= lv);
   }
-  function matchesSearch(entry) {
+  function matchesSearch(entry, sources) {
     const q = ui.search.trim().toLowerCase();
     if (!q) return true;
     if (entry.name.toLowerCase().includes(q)) return true;
-    return entry.sources.some((s) => (s.name + " " + s.loc + " " + (s.note || "")).toLowerCase().includes(q));
+    return sources.some((s) => (s.name + " " + (s.loc || "") + " " + (s.note || "")).toLowerCase().includes(q));
   }
   function groupKey(s) {
     switch (s.k) {
@@ -1000,54 +1026,81 @@
     const done = progress[progKey()];
     const doneCount = entries.filter((e) => done[e.id]).length;
     const grouped = !!ui.groupByLoc;
-    const rows = [];
-    for (const e of entries) {
-      if (ui.hideDone && done[e.id]) continue;
-      if (!entryAllowed(e)) continue;
-      if (!matchesSearch(e)) continue;
-      const vis = visibleSources(e);
-      if (!vis.length) continue;
-      rows.push({ e, vis });
-    }
+    const listName = ui.list === "blu" ? "Blue Magic" : "Beasts";
 
-    let html = "";
-    if (!rows.length) {
-      html = '<div class="empty">Nothing matches these filters' + (ui.hideDone && doneCount === entries.length ? " — everything here is obtained." : ".") + "</div>";
-    } else if (grouped) {
+    // The pool: entries that matter under the level and open-world filters, before search and "Hide obtained".
+    const pool = [];
+    for (const e of entries) {
+      if (!entryAllowed(e)) continue;
+      const vis = visibleSources(e);
+      const counting = ui.openWorldOnly ? vis.filter(isOpenWorldSource) : vis;
+      if (!counting.length) continue;
+      pool.push({ e, vis, counting, isDone: !!done[e.id] });
+    }
+    const eligible = pool.length;
+    const eligibleDone = pool.filter((r) => r.isDone).length;
+    const rows = pool.filter((r) => matchesSearch(r.e, r.counting));
+    const emptyHtml = '<div class="empty">Nothing matches these filters' +
+      (ui.hideDone && eligible > 0 && eligibleDone === eligible ? " — everything here is obtained." : ".") + "</div>";
+
+    let html = "", shown = 0;
+    if (grouped) {
       const groups = new Map();
-      for (const { e, vis } of rows) {
-        for (const s of vis) {
-          if (ui.openWorldOnly && !isOpenWorldSource(s)) continue; // outdoor route planning: no instance groups
+      for (const r of rows) {
+        for (const s of r.counting) {
           const g = groupKey(s);
           if (!groups.has(g.key)) groups.set(g.key, { ...g, items: new Map(), minLv: Infinity });
           const grp = groups.get(g.key);
           grp.minLv = Math.min(grp.minLv, s.lv);
-          if (!grp.items.has(e.id)) grp.items.set(e.id, { e, srcs: [] });
-          grp.items.get(e.id).srcs.push(s);
+          if (!grp.items.has(r.e.id)) grp.items.set(r.e.id, { e: r.e, srcs: [], isDone: r.isDone });
+          grp.items.get(r.e.id).srcs.push(s);
         }
       }
       const list = [...groups.values()].sort((a, b) => a.order - b.order || a.minLv - b.minLv || a.title.localeCompare(b.title));
       for (const g of list) {
         const k = KIND[g.kind] || KIND.world;
         const items = [...g.items.values()].sort((a, b) => a.e.id - b.e.id);
-        html += '<section class="group"><header><h2>' + esc(g.title) + "</h2>" +
-          '<span class="meta">' + esc(k.label) + " · " + items.length + (items.length === 1 ? " entry" : " entries") +
-          (isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + "</span></header>";
-        for (const it of items) html += entryRow(it.e, it.srcs, null);
+        const got = items.filter((it) => it.isDone).length;
+        const complete = got === items.length;
+        const visibleItems = ui.hideDone ? items.filter((it) => !it.isDone) : items;
+        shown += visibleItems.length;
+        html += '<section class="group' + (complete ? " complete" : "") + '"><header><h2>' + esc(g.title) + "</h2>" +
+          '<span class="meta">' + esc(k.label) + " · " + got + " of " + items.length + " obtained" +
+          (isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + "</span>" +
+          (complete ? '<span class="done-badge">Done ✓</span>' : "") + "</header>";
+        for (const it of visibleItems) html += entryRow(it.e, it.srcs, null);
         html += "</section>";
       }
+      if (!list.length) html = emptyHtml;
     } else {
-      html = '<section class="group">';
-      for (const { e, vis } of rows) html += entryRow(e, lv !== null ? vis : e.sources, lv !== null ? e.sources : null);
-      html += "</section>";
+      const visibleRows = ui.hideDone ? rows.filter((r) => !r.isDone) : rows;
+      shown = visibleRows.length;
+      if (!visibleRows.length) html = emptyHtml;
+      else {
+        html = '<section class="group">';
+        for (const r of visibleRows) html += entryRow(r.e, lv !== null ? r.vis : r.e.sources, lv !== null ? r.e.sources : null);
+        html += "</section>";
+      }
     }
     $list.innerHTML = html;
 
-    const shown = rows.length;
+    const allDone = entries.length > 0 && doneCount === entries.length;
+    const levelDone = lv !== null && eligible > 0 && eligibleDone === eligible;
+    let levelHtml = "";
+    if (lv !== null) {
+      levelHtml = '<span class="lvl-ind' + (levelDone ? " complete" : "") + '">Level ≤ ' + lv +
+        (ui.openWorldOnly ? " (open world)" : "") + ": <strong>" + eligibleDone + "</strong> of " + eligible + " obtained" +
+        (levelDone ? " · Done ✓" : eligible === 0 ? " · nothing to get at this level" : "") + "</span>";
+    }
     $summary.innerHTML =
-      "<span><strong>" + esc(names[ui.char]) + "</strong> · " + (ui.list === "blu" ? "Blue Magic" : "Beasts") +
-      " · obtained <strong>" + doneCount + "</strong> of " + entries.length + " · <strong>" + (entries.length - doneCount) + "</strong> to go</span>" +
-      "<span>Showing " + shown + (grouped ? " grouped by location" : "") + (lv !== null ? " at level ≤ " + lv : "") + "</span>";
+      "<span><strong>" + esc(names[ui.char]) + "</strong> · " + listName +
+      " · obtained <strong>" + doneCount + "</strong> of " + entries.length + " · <strong>" + (entries.length - doneCount) + "</strong> to go" +
+      (allDone ? ' · <span class="done-inline">All done ✓</span>' : "") + "</span>" +
+      "<span>Showing " + shown + (grouped ? " grouped by location" : "") + (lv !== null ? " at level ≤ " + lv : "") + "</span>" + levelHtml;
+    const $cbLevel = document.getElementById("cbLevel");
+    $cbLevel.hidden = lv === null;
+    $cbLevel.classList.toggle("complete", levelDone);
+    $cbLevel.textContent = lv === null ? "" : "≤" + lv + ": " + eligibleDone + "/" + eligible + (levelDone ? " ✓" : "");
     $bar.style.width = (entries.length ? (100 * doneCount / entries.length) : 0) + "%";
     document.getElementById("clearBtn").textContent = "Uncheck all " + (ui.list === "blu" ? "Blue Magic" : "Beasts") + " for " + names[ui.char] + "…";
     document.getElementById("cbChar").textContent = names[ui.char];
