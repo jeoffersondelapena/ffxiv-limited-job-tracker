@@ -184,30 +184,31 @@
     z-index: 6;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    gap: 12px;
+    padding: 13px 20px;
+    padding-top: calc(13px + env(safe-area-inset-top, 0px));
     background: var(--surface);
-    border-bottom: 1px solid var(--accent);
+    border-bottom: 2px solid var(--accent);
     box-shadow: var(--shadow);
-    font-size: 13.5px;
+    font-size: 15.5px;
   }
-  .context-bar .cb-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .context-bar .cb-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
   .context-bar .cb-char {
     font-family: "Cinzel", "Times New Roman", serif;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 20px;
     color: var(--accent);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     min-width: 0;
   }
   .context-bar .cb-list { font-weight: 600; white-space: nowrap; }
   .context-bar .cb-sep { color: var(--muted); }
+  .context-bar .jicon { width: 28px; height: 28px; }
   .context-bar .cb-count {
     font-variant-numeric: tabular-nums;
-    font-size: 12.5px;
+    font-size: 14.5px;
     font-weight: 600;
-    padding: 1px 9px;
+    padding: 3px 12px;
     border-radius: 999px;
     background: var(--accent);
     color: var(--accent-ink);
@@ -215,7 +216,8 @@
   }
   .context-bar .cb-level { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
   .context-bar .cb-level.complete { background: var(--done); color: #ffffff; border-color: var(--done); }
-  .context-bar .status { margin: 0 0 0 auto; white-space: nowrap; }
+  .context-bar .status { margin: 0 0 0 auto; white-space: nowrap; font-size: 14px; }
+  .context-bar .status::before { width: 10px; height: 10px; }
   .to-top {
     position: fixed;
     right: 16px;
@@ -235,7 +237,7 @@
     white-space: nowrap;
   }
   .to-top:hover { filter: brightness(1.08); }
-  @media (max-width: 640px) { .context-bar .cb-label { display: none; } .context-bar .status { font-size: 0; gap: 0; } .context-bar .status::before { width: 10px; height: 10px; } }
+  @media (max-width: 640px) { .context-bar { padding: 10px 14px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); gap: 8px; } .context-bar .cb-label { display: none; } .context-bar .cb-char { font-size: 17px; } .context-bar .status { font-size: 0; gap: 0; } .context-bar .status::before { width: 11px; height: 11px; } }
 
   .tabs {
     display: flex;
@@ -660,7 +662,7 @@
     padding-top: 2px;
   }
   .sources .also .goto { color: var(--accent); font-weight: 500; text-decoration: none; border-bottom: 1px dotted var(--accent); }
-  .group { scroll-margin-top: 64px; }
+  .group { scroll-margin-top: 84px; }
   .empty {
     text-align: center;
     color: var(--muted);
