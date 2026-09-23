@@ -995,15 +995,15 @@
     return '<span class="src' + (dim ? " dim" : "") + '" data-k="' + esc(s.k) + '">' + parts.join("") + "</span>";
   }
   let rowSeq = 0;
-  function entryRow(entry, sources, allSources, extraHtml) {
+  function entryRow(entry, sources, hiddenCount, extraHtml) {
     const done = !!progress[progKey()][entry.id];
     const stars = entry.rank ? '<span class="stars" title="Rank ' + entry.rank + '">' + "★".repeat(entry.rank) + "</span>" : "";
     const minlv = entry.minLv > 1 ? '<span class="minlv" title="Minimum level to obtain">min ' + entry.minLv + "</span>" : "";
     const id = "e-" + ui.list + "-" + entry.id + "-" + (rowSeq++);
     const chips = sources.map((s) => srcChip(s, ui.openWorldOnly && !isOpenWorldSource(s))).join("");
     const lvf = levelFilter();
-    const hidden = allSources && allSources.length > sources.length
-      ? '<span class="src dim" title="Hidden by your level filter">+' + (allSources.length - sources.length) + " more above Lv " + lvf + "</span>" : "";
+    const hidden = hiddenCount > 0
+      ? '<span class="src dim" title="Hidden by your level filter">+' + hiddenCount + " more above Lv " + lvf + "</span>" : "";
     return '<div class="entry' + (done ? " done" : "") + '" data-id="' + entry.id + '">' +
       '<input type="checkbox" id="' + id + '" ' + (done ? "checked" : "") + ' aria-label="Obtained: ' + esc(entry.name) + '">' +
       '<span class="no">' + entry.id + "</span>" +
@@ -1120,7 +1120,10 @@
           '<span class="meta">' + esc(k.label) + " · " + got + " of " + items.length + " obtained" +
           (isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + (collapsed && visibleItems.length ? " · " + visibleItems.length + " hidden" : "") + "</span>" +
           (complete ? '<span class="done-badge">Done ✓</span>' : "") + "</header>";
-        for (const it of visibleItems) html += entryRow(it.e, it.srcs, null, alsoLine(it.counting, g.key));
+        for (const it of visibleItems) {
+          const hiddenHere = lv === null ? 0 : it.e.sources.filter((s) => s.lv > lv && groupKey(s).key === g.key).length;
+          html += entryRow(it.e, it.srcs, hiddenHere, alsoLine(it.counting, g.key));
+        }
         html += "</section>";
       }
       if (!list.length) html = emptyHtml;
@@ -1130,7 +1133,7 @@
       if (!visibleRows.length) html = emptyHtml;
       else {
         html = '<section class="group">';
-        for (const r of visibleRows) html += entryRow(r.e, lv !== null ? r.vis : r.e.sources, lv !== null ? r.e.sources : null);
+        for (const r of visibleRows) html += entryRow(r.e, lv !== null ? r.vis : r.e.sources, lv !== null ? r.e.sources.length - r.vis.length : 0);
         html += "</section>";
       }
     }
