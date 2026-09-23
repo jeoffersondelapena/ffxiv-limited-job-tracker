@@ -22,4 +22,13 @@ Then republish `tracker.html` to the same hosted page (republishing keeps saved 
 
 ## Testing page changes
 
-`python3 test_harness.py` writes `tracker.test.html`, the page plus a fake cloud database that returns frozen snapshots like the real one. Open it locally, toggle entries, and check `window.__writes` / `window.__errors` in the console. Automated browser clicks do not reach the hosted page's frame, so this harness is the reliable check.
+`python3 make_harness.py` writes `tracker.test.html`, the page plus a fake cloud database that returns frozen snapshots like the real one. Open it locally, toggle entries, and check `window.__writes` / `window.__errors` in the console. Automated browser clicks do not reach the hosted page's frame, so this harness is the reliable check.
+
+## Tests
+
+```bash
+npm install   # once: pulls jsdom for the page tests
+npm test
+```
+
+`tests/page.test.mjs` drives the built page in jsdom against `tests/fake_db.js` (a stand-in for the cloud database with the same frozen-snapshot behaviour): filters, search, grouping, confirmations, uncheck-all, sync, and per-character isolation. `tests/test_data.py` checks the classification rules in `build_data.py` and invariants of the generated `data.json`. Run the tests after any page change and after every data refresh.

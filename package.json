@@ -1,0 +1,25 @@
+{
+  "name": "ffxiv-limited-job-tracker",
+  "version": "1.0.0",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node --test 'tests/**/*.test.mjs' && python3 -m unittest discover -s tests -v",
+    "test:js": "node --test 'tests/**/*.test.mjs'",
+    "test:py": "python3 -m unittest discover -s tests -v"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeoffersondelapena/ffxiv-limited-job-tracker.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jeoffersondelapena/ffxiv-limited-job-tracker/issues"
+  },
+  "homepage": "https://github.com/jeoffersondelapena/ffxiv-limited-job-tracker#readme",
+  "private": "true",
+  "devDependencies": {
+    "jsdom": "^24.1.3"
+  }
+}
