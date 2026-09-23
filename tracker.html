@@ -479,16 +479,21 @@
   }
   .summary strong { color: var(--ink); font-weight: 600; }
   .summary .done-inline { color: var(--done); font-weight: 600; }
-  .summary .lvl-ind {
-    flex-basis: 100%;
-    padding: 7px 12px;
+  .lvl-box {
+    margin: 0 2px 16px;
+    padding: 8px 12px 10px;
     border-radius: 8px;
     background: var(--surface-2);
     border: 1px solid var(--line);
     color: var(--ink);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
   }
-  .summary .lvl-ind.complete { background: var(--done-soft); border-color: var(--done); color: var(--done); }
-  .summary .lvl-ind.complete strong { color: var(--done); }
+  .lvl-box strong { font-weight: 600; }
+  .lvl-box .bar { margin: 8px 0 0; height: 5px; background: var(--line-strong); }
+  .lvl-box .bar span { background: var(--accent); }
+  .lvl-box.complete { background: var(--done-soft); border-color: var(--done); color: var(--done); }
+  .lvl-box.complete .bar span { background: var(--done); }
   .bar {
     height: 6px;
     border-radius: 999px;
@@ -738,7 +743,8 @@
   </dialog>
 
   <div class="summary" id="summary"></div>
-  <div class="bar"><span id="barFill"></span></div>
+  <div class="bar" title="Obtained out of the whole list"><span id="barFill"></span></div>
+  <div class="lvl-box" id="lvlBox" hidden></div>
   <main id="list" aria-live="polite"></main>
 
   <div class="context-bar" id="contextBar" hidden>
@@ -1132,18 +1138,20 @@
 
     const allDone = entries.length > 0 && doneCount === entries.length;
     const levelDone = lv !== null && eligible > 0 && eligibleDone === eligible;
-    let levelHtml = "";
+    const $lvlBox = document.getElementById("lvlBox");
+    $lvlBox.hidden = lv === null;
     if (lv !== null) {
-      levelHtml = '<span class="lvl-ind' + (levelDone ? " complete" : "") + '">Level ≤ ' + lv +
-        (ui.openWorldOnly ? " (open world)" : "") + ": <strong>" + eligibleDone + "</strong> of " + eligible + " obtained" +
-        (levelDone ? " · Done ✓" : eligible === 0 ? " · nothing to get at this level" : "") + "</span>";
+      $lvlBox.classList.toggle("complete", levelDone);
+      $lvlBox.innerHTML = "Level ≤ " + lv + (ui.openWorldOnly ? " (open world)" : "") + ": <strong>" + eligibleDone + "</strong> of " + eligible + " obtained" +
+        (levelDone ? " · Done ✓" : eligible === 0 ? " · nothing to get at this level" : "") +
+        '<div class="bar" title="Obtained out of what this level filter allows"><span style="width:' + (eligible ? Math.round(100 * eligibleDone / eligible) : 0) + '%"></span></div>';
     }
     $summary.innerHTML =
       "<span><strong>" + esc(names[ui.char]) + "</strong> · " + listName +
       " · obtained <strong>" + doneCount + "</strong> of " + entries.length + " · <strong>" + (entries.length - doneCount) + "</strong> to go" +
       (allDone ? ' · <span class="done-inline">All done ✓</span>' : "") + "</span>" +
       "<span>Showing " + shown + (grouped ? " grouped by location" : "") + (lv !== null ? " at level ≤ " + lv : "") +
-      (grouped && shown ? ' · <button type="button" class="linklike" data-fold="collapse">Collapse all</button> · <button type="button" class="linklike" data-fold="expand">Expand all</button>' : "") + "</span>" + levelHtml;
+      (grouped && shown ? ' · <button type="button" class="linklike" data-fold="collapse">Collapse all</button> · <button type="button" class="linklike" data-fold="expand">Expand all</button>' : "") + "</span>";
     const $cbLevel = document.getElementById("cbLevel");
     $cbLevel.hidden = lv === null;
     $cbLevel.classList.toggle("complete", levelDone);
