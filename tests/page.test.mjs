@@ -188,33 +188,37 @@ test("changes made on another device are adopted; typing in the search box never
   assert.equal(p.writes().length, before);
 });
 
-test("the '+N more above Lv' tag reveals the hidden sources on click and forgets on redraw", async () => {
+test("the '+N more above Lv' tag reveals the hidden sources on click and stays open until reload", async () => {
   const p = await load();
   await p.input("levelInput", "15");
-  const row = p.$$(".entry").find((e) => e.querySelector("[data-reveal]"));
-  assert.ok(row, "some entry has sources above level 15");
-  const tag = row.querySelector("[data-reveal]");
+  const find = () => p.$$(".entry").find((e) => e.querySelector("[data-reveal]"));
+  const tag = find().querySelector("[data-reveal]");
   const n = Number(tag.textContent.match(/\+(\d+) more/)[1]);
-  const more = tag.nextElementSibling;
-  assert.equal(more.hidden, true);
-  assert.equal(more.querySelectorAll(".src").length, n, "the hidden container holds exactly the announced sources");
+  assert.equal(tag.nextElementSibling.hidden, true);
+  assert.equal(tag.nextElementSibling.querySelectorAll(".src").length, n, "the container holds exactly the announced sources");
   tag.click(); await sleep(10);
-  assert.equal(more.hidden, false);
-  assert.match(tag.textContent, /^hide the \d+ above your level$/);
-  tag.click(); await sleep(10);
-  assert.equal(more.hidden, true);
-  tag.click(); await sleep(10);
-  await p.set("hideDone", true); // any redraw folds it again
-  const again = p.$$(".entry").find((e) => e.querySelector("[data-reveal]")).querySelector("[data-reveal]");
-  assert.equal(again.nextElementSibling.hidden, true);
+  let row = find();
+  assert.equal(row.querySelector(".more").hidden, false);
+  assert.match(row.querySelector("[data-reveal]").textContent, /^hide the \d+ above your level$/);
+  await p.set("hideDone", true); // a redraw keeps it open, like a location fold
+  row = find();
+  assert.equal(row.querySelector(".more").hidden, false);
+  row.querySelector("[data-reveal]").click(); await sleep(10);
+  assert.equal(find().querySelector(".more").hidden, true);
 });
 
 test("sorting by name applies to the flat list and inside locations, and syncs", async () => {
   const p = await load();
   const sorted = (a) => [...a].sort((x, y) => x.localeCompare(y));
   assert.notDeepEqual(p.names().slice(0, 3), sorted(p.names()).slice(0, 3), "by number is the default");
-  p.id("sortSel").value = "az"; p.id("sortSel").dispatchEvent(new p.w.Event("change", { bubbles: true })); await sleep(10);
+  const choose = async (v) => { p.id("sortSel").value = v; p.id("sortSel").dispatchEvent(new p.w.Event("change", { bubbles: true })); await sleep(10); };
+  await choose("az");
   assert.deepEqual(p.names(), sorted(p.names()));
+  await choose("za");
+  assert.deepEqual(p.names(), sorted(p.names()).reverse());
+  await choose("no-desc");
+  assert.equal(p.names()[0], "Being Mortal", "highest number first");
+  await choose("az");
   await p.set("groupByLoc", true);
   for (const g of p.$$(".group[data-gkey]")) {
     const names = [...g.querySelectorAll("label.name")].map((l) => l.firstChild.textContent.trim());

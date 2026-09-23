@@ -714,7 +714,9 @@
       <label class="field" for="sortSel">Sort
         <select id="sortSel">
           <option value="no">by number</option>
+          <option value="no-desc">by number, descending</option>
           <option value="az">A to Z</option>
+          <option value="za">Z to A</option>
         </select>
       </label>
     </div>
@@ -894,7 +896,7 @@
     body: () => { const b = { levels: Object.assign({}, ui.levels) }; for (const k of SYNCED_UI) b[k] = ui[k]; return b; },
     adopt: (d) => {
       for (const k of SYNCED_UI) if (k in d) ui[k] = d[k];
-      if (ui.sort !== "az") ui.sort = "no";
+      if (!SORTS.includes(ui.sort)) ui.sort = "no";
       if (!CHARS.includes(ui.char)) ui.char = "c1";
       if (!LISTS[ui.list]) ui.list = "blu";
       ui.levels = (d.levels && typeof d.levels === "object") ? Object.assign({}, d.levels) : {};
@@ -1014,6 +1016,8 @@
     return '<span class="src' + (dim ? " dim" : "") + '" data-k="' + esc(s.k) + '">' + parts.join("") + "</span>";
   }
   let rowSeq = 0;
+  const revealed = new Set(); // which "+N more" tags are unfolded; lives for this page load only, like location folds
+  let revealScope = "";       // the location a row is being drawn in (grouped view), so each copy keeps its own state
   function entryRow(entry, sources, hiddenSources, extraHtml) {
     const done = !!progress[progKey()][entry.id];
     const stars = entry.rank ? '<span class="stars" title="Rank ' + entry.rank + '">' + "★".repeat(entry.rank) + "</span>" : "";
@@ -1021,9 +1025,12 @@
     const id = "e-" + ui.list + "-" + entry.id + "-" + (rowSeq++);
     const chips = sources.map((s) => srcChip(s, ui.openWorldOnly && !isOpenWorldSource(s))).join("");
     const lvf = levelFilter();
+    const rkey = progKey() + "|" + entry.id + "|" + (revealScope || "");
+    const open = revealed.has(rkey);
     const hidden = hiddenSources && hiddenSources.length
-      ? '<button type="button" class="src dim reveal" data-reveal title="Hidden by your level filter — click to show">+' + hiddenSources.length + " more above Lv " + lvf + "</button>" +
-        '<span class="more" hidden>' + hiddenSources.map((s) => srcChip(s, true)).join("") + "</span>" : "";
+      ? '<button type="button" class="src dim reveal" data-reveal="' + esc(rkey) + '" title="Hidden by your level filter — click to show">' +
+        (open ? "hide the " + hiddenSources.length + " above your level" : "+" + hiddenSources.length + " more above Lv " + lvf) + "</button>" +
+        '<span class="more"' + (open ? "" : " hidden") + ">" + hiddenSources.map((s) => srcChip(s, true)).join("") + "</span>" : "";
     return '<div class="entry' + (done ? " done" : "") + '" data-id="' + entry.id + '">' +
       '<input type="checkbox" id="' + id + '" ' + (done ? "checked" : "") + ' aria-label="Obtained: ' + esc(entry.name) + '">' +
       '<span class="no">' + entry.id + "</span>" +
@@ -1031,7 +1038,15 @@
       '<div class="sources">' + chips + hidden + (extraHtml || "") + "</div></div>";
   }
   const KIND_ORDER = { world: 0, default: 0, totem: 1, quest: 1, fate: 2, leve: 3, questmob: 4, hunt: 5, map: 6 };
-  function entryOrder(a, b) { return ui.sort === "az" ? a.name.localeCompare(b.name) || a.id - b.id : a.id - b.id; }
+  const SORTS = ["no", "no-desc", "az", "za"];
+  function entryOrder(a, b) {
+    switch (ui.sort) {
+      case "no-desc": return b.id - a.id;
+      case "az": return a.name.localeCompare(b.name) || a.id - b.id;
+      case "za": return b.name.localeCompare(a.name) || b.id - a.id;
+      default: return a.id - b.id;
+    }
+  }
   // Fold state lives only for this page load: a location starts folded when everything in it is obtained,
   // open otherwise; toggles after that are explicit and never touch storage or the cloud.
   const foldState = {};
@@ -1143,7 +1158,9 @@
           (complete ? '<span class="done-badge">Done ✓</span>' : "") + "</header>";
         for (const it of visibleItems) {
           const hiddenHere = lv === null ? [] : it.e.sources.filter((s) => s.lv > lv && groupKey(s).key === g.key);
+          revealScope = g.key;
           html += entryRow(it.e, it.srcs, hiddenHere, alsoLine(it.counting, g.key));
+          revealScope = "";
         }
         html += "</section>";
       }
@@ -1194,7 +1211,7 @@
   function syncControls() {
     for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) document.getElementById(id).checked = !!ui[id];
     document.getElementById("rareCounts").disabled = !ui.openWorldOnly;
-    document.getElementById("sortSel").value = ui.sort === "az" ? "az" : "no";
+    document.getElementById("sortSel").value = SORTS.includes(ui.sort) ? ui.sort : "no";
   }
 
   let lastCleared = null;
@@ -1258,10 +1275,9 @@
   $list.addEventListener("click", (ev) => {
     const reveal = ev.target.closest("[data-reveal]");
     if (reveal) {
-      const more = reveal.nextElementSibling;
-      const open = more && !more.hidden;
-      if (more) more.hidden = open;
-      reveal.textContent = open ? "+" + more.children.length + " more above Lv " + levelFilter() : "hide the " + more.children.length + " above your level";
+      const key = reveal.dataset.reveal;
+      if (revealed.has(key)) revealed.delete(key); else revealed.add(key);
+      render();
       return;
     }
     const go = ev.target.closest("[data-goto]");
@@ -1315,7 +1331,7 @@
     el.addEventListener("change", () => { ui[id] = el.checked; syncControls(); saveUI(); render(); });
   }
   syncControls();
-  document.getElementById("sortSel").addEventListener("change", (ev) => { ui.sort = ev.target.value === "az" ? "az" : "no"; saveUI(); render(); });
+  document.getElementById("sortSel").addEventListener("change", (ev) => { ui.sort = SORTS.includes(ev.target.value) ? ev.target.value : "no"; saveUI(); render(); });
   const $search = document.getElementById("searchInput");
   $search.value = ui.search || "";
   $search.addEventListener("input", () => { ui.search = $search.value; writeLS(LS_UI, ui); render(); });
