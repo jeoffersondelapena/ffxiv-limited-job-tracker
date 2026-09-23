@@ -629,6 +629,14 @@
   .src .loc { color: var(--muted); }
   .src .note { color: var(--muted); font-style: italic; }
   .src.dim { opacity: .55; }
+  .sources .also {
+    flex-basis: 100%;
+    font-size: 12.5px;
+    color: var(--muted);
+    padding-top: 2px;
+  }
+  .sources .also .goto { color: var(--accent); font-weight: 500; text-decoration: none; border-bottom: 1px dotted var(--accent); }
+  .group { scroll-margin-top: 64px; }
   .empty {
     text-align: center;
     color: var(--muted);
@@ -973,7 +981,7 @@
     return '<span class="src' + (dim ? " dim" : "") + '" data-k="' + esc(s.k) + '">' + parts.join("") + "</span>";
   }
   let rowSeq = 0;
-  function entryRow(entry, sources, allSources) {
+  function entryRow(entry, sources, allSources, extraHtml) {
     const done = !!progress[progKey()][entry.id];
     const stars = entry.rank ? '<span class="stars" title="Rank ' + entry.rank + '">' + "★".repeat(entry.rank) + "</span>" : "";
     const minlv = entry.minLv > 1 ? '<span class="minlv" title="Minimum level to obtain">min ' + entry.minLv + "</span>" : "";
@@ -986,7 +994,29 @@
       '<input type="checkbox" id="' + id + '" ' + (done ? "checked" : "") + ' aria-label="Obtained: ' + esc(entry.name) + '">' +
       '<span class="no">' + entry.id + "</span>" +
       '<label class="name" for="' + id + '">' + esc(entry.name) + stars + minlv + "</label>" +
-      '<div class="sources">' + chips + hidden + "</div></div>";
+      '<div class="sources">' + chips + hidden + (extraHtml || "") + "</div></div>";
+  }
+  const KIND_ORDER = { world: 0, default: 0, totem: 1, quest: 1, fate: 2, leve: 3, questmob: 4, hunt: 5, map: 6 };
+  function groupDomId(key) { return "g-" + key.replace(/[^A-Za-z0-9]+/g, "-"); }
+  // "Also in …": the other groups where this entry can be obtained under the current filters, best option first.
+  function alsoLine(counting, currentKey) {
+    const best = new Map();
+    for (const s of counting) {
+      const g = groupKey(s);
+      if (g.key === currentKey) continue;
+      const cur = best.get(g.key);
+      if (!cur || (KIND_ORDER[s.k] ?? 9) < (KIND_ORDER[cur.s.k] ?? 9) || ((KIND_ORDER[s.k] ?? 9) === (KIND_ORDER[cur.s.k] ?? 9) && s.lv < cur.s.lv)) best.set(g.key, { g, s });
+    }
+    if (!best.size) return "";
+    const parts = [...best.values()]
+      .sort((a, b) => (KIND_ORDER[a.s.k] ?? 9) - (KIND_ORDER[b.s.k] ?? 9) || a.s.lv - b.s.lv || a.g.title.localeCompare(b.g.title))
+      .map(({ g, s }) => {
+        const k = KIND[s.k] || KIND.world;
+        const tag = s.k === "hunt" && s.rank ? s.rank + "-rank hunt" : k.short.toLowerCase();
+        const lv = s.lvMax && s.lvMax !== s.lv ? "Lv " + s.lv + "–" + s.lvMax : "Lv " + s.lv;
+        return '<a href="#" class="goto" data-goto="' + esc(groupDomId(g.key)) + '">' + esc(g.title) + "</a> (" + esc(tag) + ", " + lv + ")";
+      });
+    return '<div class="also">Also in ' + parts.join(" · ") + "</div>";
   }
 
   // ---------- render ----------
@@ -1052,7 +1082,7 @@
           if (!groups.has(g.key)) groups.set(g.key, { ...g, items: new Map(), minLv: Infinity });
           const grp = groups.get(g.key);
           grp.minLv = Math.min(grp.minLv, s.lv);
-          if (!grp.items.has(r.e.id)) grp.items.set(r.e.id, { e: r.e, srcs: [], isDone: r.isDone });
+          if (!grp.items.has(r.e.id)) grp.items.set(r.e.id, { e: r.e, srcs: [], isDone: r.isDone, counting: r.counting });
           grp.items.get(r.e.id).srcs.push(s);
         }
       }
@@ -1064,11 +1094,11 @@
         const complete = got === items.length;
         const visibleItems = ui.hideDone ? items.filter((it) => !it.isDone) : items;
         shown += visibleItems.length;
-        html += '<section class="group' + (complete ? " complete" : "") + '"><header><h2>' + esc(g.title) + "</h2>" +
+        html += '<section class="group' + (complete ? " complete" : "") + '" id="' + esc(groupDomId(g.key)) + '"><header><h2>' + esc(g.title) + "</h2>" +
           '<span class="meta">' + esc(k.label) + " · " + got + " of " + items.length + " obtained" +
           (isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + "</span>" +
           (complete ? '<span class="done-badge">Done ✓</span>' : "") + "</header>";
-        for (const it of visibleItems) html += entryRow(it.e, it.srcs, null);
+        for (const it of visibleItems) html += entryRow(it.e, it.srcs, null, alsoLine(it.counting, g.key));
         html += "</section>";
       }
       if (!list.length) html = emptyHtml;
@@ -1160,6 +1190,13 @@
     if (row) requestToggle(Number(row.dataset.id), cb.checked);
   });
   $list.addEventListener("click", (ev) => {
+    const go = ev.target.closest("[data-goto]");
+    if (go) {
+      ev.preventDefault();
+      const target = document.getElementById(go.dataset.goto);
+      if (target) target.scrollIntoView({ behavior: "auto", block: "start" }); // instant: reliable even when frames are throttled
+      return;
+    }
     const lbl = ev.target.closest("label.name");
     if (!lbl || ev.target.closest("a")) return;
     ev.preventDefault();
