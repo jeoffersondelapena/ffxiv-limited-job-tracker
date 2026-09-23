@@ -523,6 +523,13 @@
     letter-spacing: .01em;
   }
   .group > header .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .group > header[role="button"] { cursor: pointer; user-select: none; }
+  .group > header[role="button"]:hover { filter: brightness(.97); }
+  .group > header h2::before { content: "▾"; display: inline-block; width: 1em; color: var(--muted); font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 13px; }
+  .group.collapsed > header h2::before { content: "▸"; }
+  .group.collapsed > header { border-bottom: 0; }
+  .group.collapsed .entry { display: none; }
+  .linklike { appearance: none; background: none; border: 0; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline dotted; }
   .group.complete > header { background: var(--done-soft); }
   .group.complete > header h2 { color: var(--done); }
   .done-badge {
@@ -997,6 +1004,16 @@
       '<div class="sources">' + chips + hidden + (extraHtml || "") + "</div></div>";
   }
   const KIND_ORDER = { world: 0, default: 0, totem: 1, quest: 1, fate: 2, leve: 3, questmob: 4, hunt: 5, map: 6 };
+  function collapsedSet() {
+    if (!ui.collapsed || typeof ui.collapsed !== "object") ui.collapsed = {};
+    if (!ui.collapsed[ui.list] || typeof ui.collapsed[ui.list] !== "object") ui.collapsed[ui.list] = {};
+    return ui.collapsed[ui.list];
+  }
+  function setCollapsed(key, value) {
+    const c = collapsedSet();
+    if (value) c[key] = true; else delete c[key];
+    writeLS(LS_UI, ui); // viewing convenience: this device only
+  }
   function groupDomId(key) { return "g-" + key.replace(/[^A-Za-z0-9]+/g, "-"); }
   // "Also in …": the other groups where this entry can be obtained under the current filters, best option first.
   function alsoLine(counting, currentKey) {
@@ -1094,9 +1111,11 @@
         const complete = got === items.length;
         const visibleItems = ui.hideDone ? items.filter((it) => !it.isDone) : items;
         shown += visibleItems.length;
-        html += '<section class="group' + (complete ? " complete" : "") + '" id="' + esc(groupDomId(g.key)) + '"><header><h2>' + esc(g.title) + "</h2>" +
+        const collapsed = !!collapsedSet()[g.key];
+        html += '<section class="group' + (complete ? " complete" : "") + (collapsed ? " collapsed" : "") + '" id="' + esc(groupDomId(g.key)) + '" data-gkey="' + esc(g.key) + '">' +
+          '<header role="button" tabindex="0" aria-expanded="' + (!collapsed) + '" title="Click to ' + (collapsed ? "expand" : "collapse") + '"><h2>' + esc(g.title) + "</h2>" +
           '<span class="meta">' + esc(k.label) + " · " + got + " of " + items.length + " obtained" +
-          (isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + "</span>" +
+          (isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + (collapsed && visibleItems.length ? " · " + visibleItems.length + " hidden" : "") + "</span>" +
           (complete ? '<span class="done-badge">Done ✓</span>' : "") + "</header>";
         for (const it of visibleItems) html += entryRow(it.e, it.srcs, null, alsoLine(it.counting, g.key));
         html += "</section>";
@@ -1126,7 +1145,8 @@
       "<span><strong>" + esc(names[ui.char]) + "</strong> · " + listName +
       " · obtained <strong>" + doneCount + "</strong> of " + entries.length + " · <strong>" + (entries.length - doneCount) + "</strong> to go" +
       (allDone ? ' · <span class="done-inline">All done ✓</span>' : "") + "</span>" +
-      "<span>Showing " + shown + (grouped ? " grouped by location" : "") + (lv !== null ? " at level ≤ " + lv : "") + "</span>" + levelHtml;
+      "<span>Showing " + shown + (grouped ? " grouped by location" : "") + (lv !== null ? " at level ≤ " + lv : "") +
+      (grouped && shown ? ' · <button type="button" class="linklike" data-fold="collapse">Collapse all</button> · <button type="button" class="linklike" data-fold="expand">Expand all</button>' : "") + "</span>" + levelHtml;
     const $cbLevel = document.getElementById("cbLevel");
     $cbLevel.hidden = lv === null;
     $cbLevel.classList.toggle("complete", levelDone);
@@ -1189,14 +1209,36 @@
     const row = cb.closest(".entry");
     if (row) requestToggle(Number(row.dataset.id), cb.checked);
   });
+  function toggleGroup(section) {
+    const key = section.dataset.gkey;
+    if (!key) return;
+    setCollapsed(key, !section.classList.contains("collapsed"));
+    render();
+  }
+  $list.addEventListener("keydown", (ev) => {
+    const hdr = ev.target.closest && ev.target.closest(".group > header[role=button]");
+    if (hdr && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); toggleGroup(hdr.parentElement); }
+  });
+  $summary.addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-fold]");
+    if (!b) return;
+    const c = collapsedSet();
+    if (b.dataset.fold === "expand") for (const k of Object.keys(c)) delete c[k];
+    else for (const s of $list.querySelectorAll(".group[data-gkey]")) c[s.dataset.gkey] = true;
+    writeLS(LS_UI, ui); render();
+  });
   $list.addEventListener("click", (ev) => {
     const go = ev.target.closest("[data-goto]");
     if (go) {
       ev.preventDefault();
       const target = document.getElementById(go.dataset.goto);
-      if (target) target.scrollIntoView({ behavior: "auto", block: "start" }); // instant: reliable even when frames are throttled
+      if (target && target.classList.contains("collapsed")) { setCollapsed(target.dataset.gkey, false); render(); }
+      const t2 = document.getElementById(go.dataset.goto);
+      if (t2) t2.scrollIntoView({ behavior: "auto", block: "start" }); // instant: reliable even when frames are throttled
       return;
     }
+    const hdr = ev.target.closest(".group > header[role=button]");
+    if (hdr && !ev.target.closest("a, button")) { toggleGroup(hdr.parentElement); return; }
     const lbl = ev.target.closest("label.name");
     if (!lbl || ev.target.closest("a")) return;
     ev.preventDefault();
