@@ -188,6 +188,46 @@ test("changes made on another device are adopted; typing in the search box never
   assert.equal(p.writes().length, before);
 });
 
+test("the '+N more above Lv' tag reveals the hidden sources on click and forgets on redraw", async () => {
+  const p = await load();
+  await p.input("levelInput", "15");
+  const row = p.$$(".entry").find((e) => e.querySelector("[data-reveal]"));
+  assert.ok(row, "some entry has sources above level 15");
+  const tag = row.querySelector("[data-reveal]");
+  const n = Number(tag.textContent.match(/\+(\d+) more/)[1]);
+  const more = tag.nextElementSibling;
+  assert.equal(more.hidden, true);
+  assert.equal(more.querySelectorAll(".src").length, n, "the hidden container holds exactly the announced sources");
+  tag.click(); await sleep(10);
+  assert.equal(more.hidden, false);
+  assert.match(tag.textContent, /^hide the \d+ above your level$/);
+  tag.click(); await sleep(10);
+  assert.equal(more.hidden, true);
+  tag.click(); await sleep(10);
+  await p.set("hideDone", true); // any redraw folds it again
+  const again = p.$$(".entry").find((e) => e.querySelector("[data-reveal]")).querySelector("[data-reveal]");
+  assert.equal(again.nextElementSibling.hidden, true);
+});
+
+test("sorting by name applies to the flat list and inside locations, and syncs", async () => {
+  const p = await load();
+  const sorted = (a) => [...a].sort((x, y) => x.localeCompare(y));
+  assert.notDeepEqual(p.names().slice(0, 3), sorted(p.names()).slice(0, 3), "by number is the default");
+  p.id("sortSel").value = "az"; p.id("sortSel").dispatchEvent(new p.w.Event("change", { bubbles: true })); await sleep(10);
+  assert.deepEqual(p.names(), sorted(p.names()));
+  await p.set("groupByLoc", true);
+  for (const g of p.$$(".group[data-gkey]")) {
+    const names = [...g.querySelectorAll("label.name")].map((l) => l.firstChild.textContent.trim());
+    assert.deepEqual(names, sorted(names), g.querySelector("h2").textContent);
+  }
+  await sleep(FLUSH);
+  assert.equal(plain(p.writes("settings/ui").at(-1).data).sort, "az", "the choice is written to the cloud");
+  await p.w.__db.doc("settings/ui").set({ char: "c1", list: "blu", hideDone: false, openWorldOnly: false, rareCounts: false, groupByLoc: false, sort: "no", levels: {} });
+  await sleep(20);
+  assert.equal(p.id("sortSel").value, "no", "another device's choice is adopted");
+  assert.equal(p.names()[0], "Water Cannon");
+});
+
 test("each character keeps its own checks and its own level per list", async () => {
   const p = await load();
   await p.input("levelInput", "20");
