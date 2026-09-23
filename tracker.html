@@ -794,6 +794,7 @@
     list: "blu", char: "c1", hideDone: false, openWorldOnly: false, rareCounts: false, groupByLoc: false,
     search: "", levels: {}
   }, readLS(LS_UI, {}));
+  delete ui.collapsed; // fold state from an earlier version; no longer stored
   const progress = readLS(LS_PROG, {});   // key "c1-blu" -> {id: true}
   const names = Object.assign({ c1: "Character 1", c2: "Character 2" }, readLS(LS_NAMES, {}));
   for (const c of CHARS) for (const l of Object.keys(LISTS)) progress[c + "-" + l] = progress[c + "-" + l] || {};
@@ -1004,16 +1005,12 @@
       '<div class="sources">' + chips + hidden + (extraHtml || "") + "</div></div>";
   }
   const KIND_ORDER = { world: 0, default: 0, totem: 1, quest: 1, fate: 2, leve: 3, questmob: 4, hunt: 5, map: 6 };
-  function collapsedSet() {
-    if (!ui.collapsed || typeof ui.collapsed !== "object") ui.collapsed = {};
-    if (!ui.collapsed[ui.list] || typeof ui.collapsed[ui.list] !== "object") ui.collapsed[ui.list] = {};
-    return ui.collapsed[ui.list];
-  }
-  function setCollapsed(key, value) {
-    const c = collapsedSet();
-    if (value) c[key] = true; else delete c[key];
-    writeLS(LS_UI, ui); // viewing convenience: this device only
-  }
+  // Fold state lives only for this page load: a location starts folded when everything in it is obtained,
+  // open otherwise; toggles after that are explicit and never touch storage or the cloud.
+  const foldState = {};
+  const foldKey = (gkey) => progKey() + "|" + gkey;
+  function isFolded(gkey, complete) { const k = foldKey(gkey); if (!(k in foldState)) foldState[k] = complete; return foldState[k]; }
+  function setFolded(gkey, value) { foldState[foldKey(gkey)] = !!value; }
   function groupDomId(key) { return "g-" + key.replace(/[^A-Za-z0-9]+/g, "-"); }
   // "Also in …": the other groups where this entry can be obtained under the current filters, best option first.
   function alsoLine(counting, currentKey) {
@@ -1111,7 +1108,7 @@
         const complete = got === items.length;
         const visibleItems = ui.hideDone ? items.filter((it) => !it.isDone) : items;
         shown += visibleItems.length;
-        const collapsed = !!collapsedSet()[g.key];
+        const collapsed = isFolded(g.key, complete);
         html += '<section class="group' + (complete ? " complete" : "") + (collapsed ? " collapsed" : "") + '" id="' + esc(groupDomId(g.key)) + '" data-gkey="' + esc(g.key) + '">' +
           '<header role="button" tabindex="0" aria-expanded="' + (!collapsed) + '" title="Click to ' + (collapsed ? "expand" : "collapse") + '"><h2>' + esc(g.title) + "</h2>" +
           '<span class="meta">' + esc(k.label) + " · " + got + " of " + items.length + " obtained" +
@@ -1212,7 +1209,7 @@
   function toggleGroup(section) {
     const key = section.dataset.gkey;
     if (!key) return;
-    setCollapsed(key, !section.classList.contains("collapsed"));
+    setFolded(key, !section.classList.contains("collapsed"));
     render();
   }
   $list.addEventListener("keydown", (ev) => {
@@ -1222,17 +1219,15 @@
   $summary.addEventListener("click", (ev) => {
     const b = ev.target.closest("[data-fold]");
     if (!b) return;
-    const c = collapsedSet();
-    if (b.dataset.fold === "expand") for (const k of Object.keys(c)) delete c[k];
-    else for (const s of $list.querySelectorAll(".group[data-gkey]")) c[s.dataset.gkey] = true;
-    writeLS(LS_UI, ui); render();
+    for (const s of $list.querySelectorAll(".group[data-gkey]")) setFolded(s.dataset.gkey, b.dataset.fold !== "expand");
+    render();
   });
   $list.addEventListener("click", (ev) => {
     const go = ev.target.closest("[data-goto]");
     if (go) {
       ev.preventDefault();
       const target = document.getElementById(go.dataset.goto);
-      if (target && target.classList.contains("collapsed")) { setCollapsed(target.dataset.gkey, false); render(); }
+      if (target && target.classList.contains("collapsed")) { setFolded(target.dataset.gkey, false); render(); }
       const t2 = document.getElementById(go.dataset.goto);
       if (t2) t2.scrollIntoView({ behavior: "auto", block: "start" }); // instant: reliable even when frames are throttled
       return;
