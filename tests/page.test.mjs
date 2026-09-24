@@ -232,6 +232,41 @@ test("sorting by name applies to the flat list and inside locations, and syncs",
   assert.equal(p.names()[0], "Water Cannon");
 });
 
+test("the level filter can be switched off without losing its value, per list, and syncs", async () => {
+  const p = await load();
+  await p.input("levelInput", "12");
+  assert.equal(p.id("lvlBox").hidden, false);
+  await p.set("levelOn", false);
+  assert.equal(p.id("lvlBox").hidden, true, "filter off: no level box");
+  assert.equal(p.id("levelInput").value, "12", "the value is kept");
+  assert.equal(p.id("levelInput").disabled, true);
+  assert.equal(p.names().length, 124, "nothing filtered");
+  await sleep(FLUSH);
+  assert.deepEqual(plain(p.writes("settings/ui").at(-1).data.levelOn), { "c1-blu": false });
+  p.id("tab-bst").click(); await sleep(10);
+  assert.equal(p.id("levelOn").checked, true, "the switch is per character and list");
+  p.id("tab-blu").click(); await sleep(10);
+  await p.set("levelOn", true);
+  assert.equal(p.id("lvlBox").hidden, false);
+  assert.match(p.id("lvlBox").textContent, /Level ≤ 12/);
+});
+
+test("Reset asks first, then clears the filters but never the checks", async () => {
+  const p = await load();
+  await p.input("levelInput", "12");
+  await p.set("openWorldOnly", true);
+  p.id("resetBtn").click(); await sleep(10);
+  assert.equal(p.dialogOpen(), true);
+  assert.match(p.id("confirmTitle").textContent, /Reset the filters\?/);
+  await p.cancel();
+  assert.equal(p.id("openWorldOnly").checked, true, "cancel keeps the filters");
+  p.id("resetBtn").click(); await sleep(10);
+  await p.confirm();
+  assert.equal(p.id("openWorldOnly").checked, false);
+  assert.equal(p.id("levelInput").value, "");
+  assert.equal(p.count(), "1 / 124", "checks untouched");
+});
+
 test("each character keeps its own checks and its own level per list", async () => {
   const p = await load();
   await p.input("levelInput", "20");

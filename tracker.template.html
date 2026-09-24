@@ -432,6 +432,7 @@
     align-items: center;
     gap: 8px;
   }
+  .field input#levelInput:disabled { opacity: .5; }
   .field input#levelInput {
     font: inherit;
     font-variant-numeric: tabular-nums;
@@ -724,8 +725,9 @@
     </div>
     <div class="row">
       <span class="label">Show</span>
-      <label class="field" for="levelInput">Level ≤
-        <input type="text" id="levelInput" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="any">
+      <label class="toggle" for="levelOn"><input type="checkbox" id="levelOn"> Level filter</label>
+      <label class="field" for="levelInput">≤
+        <input type="text" id="levelInput" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="level">
       </label>
       <label class="toggle"><input type="checkbox" id="hideDone"> Hide obtained</label>
       <label class="toggle"><input type="checkbox" id="openWorldOnly"> Open world only <span class="hint">hides instance-only entries, dims instance sources</span></label>
@@ -820,7 +822,7 @@
   // ---------- state ----------
   const ui = Object.assign({
     list: "blu", char: "c1", hideDone: false, openWorldOnly: false, rareCounts: false, groupByLoc: false, sort: "no",
-    search: "", levels: {}
+    search: "", levels: {}, levelOn: {}
   }, readLS(LS_UI, {}));
   delete ui.collapsed; // fold state from an earlier version; no longer stored
   const progress = readLS(LS_PROG, {});   // key "c1-blu" -> {id: true}
@@ -895,13 +897,14 @@
   };
   DOCS.ui = {
     path: "settings/ui",
-    body: () => { const b = { levels: Object.assign({}, ui.levels) }; for (const k of SYNCED_UI) b[k] = ui[k]; return b; },
+    body: () => { const b = { levels: Object.assign({}, ui.levels), levelOn: Object.assign({}, ui.levelOn) }; for (const k of SYNCED_UI) b[k] = ui[k]; return b; },
     adopt: (d) => {
       for (const k of SYNCED_UI) if (k in d) ui[k] = d[k];
       if (!SORTS.includes(ui.sort)) ui.sort = "no";
       if (!CHARS.includes(ui.char)) ui.char = "c1";
       if (!LISTS[ui.list]) ui.list = "blu";
       ui.levels = (d.levels && typeof d.levels === "object") ? Object.assign({}, d.levels) : {};
+      ui.levelOn = (d.levelOn && typeof d.levelOn === "object") ? Object.assign({}, d.levelOn) : {};
       writeLS(LS_UI, ui);
     },
     hasLocal: () => true
@@ -969,10 +972,12 @@
   function entryAllowed(entry) {
     return !ui.openWorldOnly || entry.sources.some(isOpenWorldSource);
   }
-  function levelFilter() {
+  function levelValue() {
     const v = ui.levels[levelKey()];
     return (typeof v === "number" && v > 0) ? v : null;
   }
+  function levelEnabled() { if (!ui.levelOn || typeof ui.levelOn !== "object") ui.levelOn = {}; return ui.levelOn[levelKey()] !== false; }
+  function levelFilter() { return levelEnabled() ? levelValue() : null; }
   function visibleSources(entry) {
     const lv = levelFilter();
     return entry.sources.filter((s) => lv === null || s.lv <= lv);
@@ -1108,7 +1113,10 @@
     renderCounts();
     const lvInput = document.getElementById("levelInput");
     const lv = levelFilter();
-    if (document.activeElement !== lvInput) lvInput.value = lv === null ? "" : String(lv);
+    const lvv = levelValue();
+    if (document.activeElement !== lvInput) lvInput.value = lvv === null ? "" : String(lvv);
+    lvInput.disabled = !levelEnabled();
+    document.getElementById("levelOn").checked = levelEnabled();
 
     const entries = LISTS[ui.list];
     const done = progress[progKey()];
@@ -1229,29 +1237,29 @@
   }
   const $cdlg = document.getElementById("confirmDialog");
   const $confirmOk = document.getElementById("confirmOk");
-  let pendingToggle = null, confirmed = false;
+  let pendingAction = null, confirmed = false;
+  function askConfirm(title, text, okLabel, action) {
+    if (!$cdlg.showModal) { if (window.confirm(title + " " + text)) action(); else render(); return; }
+    pendingAction = action; confirmed = false;
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmText").textContent = text;
+    $confirmOk.textContent = okLabel;
+    $cdlg.showModal(); $confirmOk.focus();
+  }
   function requestToggle(id, value) {
     const next = value === undefined ? !progress[progKey()][id] : !!value;
     const entry = LISTS[ui.list].find((e) => e.id === id);
     const where = names[ui.char] + " · " + (ui.list === "blu" ? "Blue Magic" : "Beasts");
-    if (!$cdlg.showModal) {
-      if (window.confirm((next ? "Mark obtained: " : "Mark NOT obtained: ") + entry.name + " (" + where + ")?")) toggleEntry(id, next); else render();
-      return;
-    }
-    pendingToggle = { id, next }; confirmed = false;
-    document.getElementById("confirmTitle").textContent = next ? "Mark as obtained?" : "Mark as not obtained?";
-    document.getElementById("confirmText").textContent = entry.name + " for " + where + ".";
-    $confirmOk.textContent = next ? "Yes, obtained" : "Yes, not obtained";
-    $cdlg.showModal(); $confirmOk.focus();
+    askConfirm(next ? "Mark as obtained?" : "Mark as not obtained?", entry.name + " for " + where + ".", next ? "Yes, obtained" : "Yes, not obtained", () => toggleEntry(id, next));
   }
   document.getElementById("confirmForm").addEventListener("submit", (ev) => {
     ev.preventDefault();
     confirmed = true; $cdlg.close();
-    if (pendingToggle) toggleEntry(pendingToggle.id, pendingToggle.next);
-    pendingToggle = null;
+    const act = pendingAction; pendingAction = null;
+    if (act) act();
   });
   document.getElementById("confirmCancel").addEventListener("click", () => $cdlg.close());
-  $cdlg.addEventListener("close", () => { if (!confirmed) { pendingToggle = null; render(); } }); // cancel or Escape: redraw so a natively flipped box snaps back
+  $cdlg.addEventListener("close", () => { if (!confirmed) { pendingAction = null; render(); } }); // cancel or Escape: redraw so a natively flipped box snaps back
   $list.addEventListener("change", (ev) => {
     const cb = ev.target;
     if (!cb || cb.type !== "checkbox") return;
@@ -1327,6 +1335,11 @@
     if (isFinite(v) && v > 0) ui.levels[levelKey()] = v; else delete ui.levels[levelKey()];
     saveUI(); render();
   });
+  document.getElementById("levelOn").addEventListener("change", (ev) => {
+    if (!ui.levelOn || typeof ui.levelOn !== "object") ui.levelOn = {};
+    if (ev.target.checked) delete ui.levelOn[levelKey()]; else ui.levelOn[levelKey()] = false;
+    saveUI(); render();
+  });
   const $rare = document.getElementById("rareCounts");
   for (const id of ["hideDone", "openWorldOnly", "rareCounts", "groupByLoc"]) {
     const el = document.getElementById(id);
@@ -1338,11 +1351,14 @@
   $search.value = ui.search || "";
   $search.addEventListener("input", () => { ui.search = $search.value; writeLS(LS_UI, ui); render(); });
   document.getElementById("resetBtn").addEventListener("click", () => {
-    ui.hideDone = ui.openWorldOnly = ui.rareCounts = ui.groupByLoc = false;
-    ui.search = ""; delete ui.levels[levelKey()];
-    syncControls();
-    $search.value = ""; $level.value = "";
-    saveUI(); render();
+    askConfirm("Reset the filters?", "Clears the level, the toggles and the search for " + names[ui.char] + " · " + (ui.list === "blu" ? "Blue Magic" : "Beasts") + ". Your checks are not affected.", "Yes, reset", () => {
+      ui.hideDone = ui.openWorldOnly = ui.rareCounts = ui.groupByLoc = false;
+      ui.search = ""; delete ui.levels[levelKey()];
+      if (ui.levelOn && typeof ui.levelOn === "object") delete ui.levelOn[levelKey()];
+      syncControls();
+      $search.value = ""; $level.value = "";
+      saveUI(); render();
+    });
   });
 
   const $dlg = document.getElementById("clearDialog");
