@@ -239,8 +239,11 @@ test("the level filter can be switched off without losing its value, per list, a
   await p.set("levelOn", false);
   assert.equal(p.id("lvlBox").hidden, true, "filter off: no level box");
   assert.equal(p.id("levelInput").value, "12", "the value is kept");
-  assert.equal(p.id("levelInput").disabled, true);
+  assert.equal(p.id("levelInput").disabled, false, "still editable while off");
   assert.equal(p.names().length, 124, "nothing filtered");
+  await p.input("levelInput", "20");
+  assert.equal(p.id("levelOn").checked, false, "typing does not flip the switch");
+  assert.equal(p.names().length, 124, "still not filtering");
   await sleep(FLUSH);
   assert.deepEqual(plain(p.writes("settings/ui").at(-1).data.levelOn), { "c1-blu": false });
   p.id("tab-bst").click(); await sleep(10);
@@ -248,7 +251,7 @@ test("the level filter can be switched off without losing its value, per list, a
   p.id("tab-blu").click(); await sleep(10);
   await p.set("levelOn", true);
   assert.equal(p.id("lvlBox").hidden, false);
-  assert.match(p.id("lvlBox").textContent, /Level ≤ 12/);
+  assert.match(p.id("lvlBox").textContent, /Level ≤ 20/, "the value typed while off applies once the switch is on");
 });
 
 test("Reset asks first, then clears the filters but never the checks", async () => {

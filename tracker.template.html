@@ -432,7 +432,7 @@
     align-items: center;
     gap: 8px;
   }
-  .field input#levelInput:disabled { opacity: .5; }
+  .field input#levelInput.off { opacity: .55; text-decoration: line-through; }
   .field input#levelInput {
     font: inherit;
     font-variant-numeric: tabular-nums;
@@ -1115,7 +1115,7 @@
     const lv = levelFilter();
     const lvv = levelValue();
     if (document.activeElement !== lvInput) lvInput.value = lvv === null ? "" : String(lvv);
-    lvInput.disabled = !levelEnabled();
+    lvInput.classList.toggle("off", !levelEnabled()); // stays editable; the switch alone decides whether it filters
     document.getElementById("levelOn").checked = levelEnabled();
 
     const entries = LISTS[ui.list];
