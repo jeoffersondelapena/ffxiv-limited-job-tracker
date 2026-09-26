@@ -123,7 +123,7 @@ test("search only matches sources that count under the current filters", async (
 test("the level box counts what is obtainable at that level and turns green when complete", async () => {
   const p = await load();
   await p.input("levelInput", "12");
-  assert.equal(p.id("lvlBox").textContent.trim(), "Level ≤ 12: 1 of 15 obtained");
+  assert.equal(p.id("lvlBox").textContent.trim(), "Level ≤ 12: 1 of 15 obtained · 14 to go");
   assert.equal(p.id("cbLevel").textContent, "≤12: 1/15");
   for (;;) { const b = p.$$(".entry input").find((x) => !x.checked); if (!b) break; b.click(); await sleep(5); await p.confirm(); } // re-query: each confirm re-renders
   assert.match(p.id("lvlBox").textContent, /15 of 15 obtained · Done ✓/);
