@@ -1195,7 +1195,7 @@
     $lvlBox.hidden = lv === null;
     if (lv !== null) {
       $lvlBox.classList.toggle("complete", levelDone);
-      $lvlBox.innerHTML = "Level ≤ " + lv + (ui.openWorldOnly ? " (open world)" : "") + ": <strong>" + eligibleDone + "</strong> of <strong>" + eligible + "</strong> obtained" +
+      $lvlBox.innerHTML = "Level ≤ <strong>" + lv + "</strong>" + (ui.openWorldOnly ? " (open world)" : "") + ": <strong>" + eligibleDone + "</strong> of <strong>" + eligible + "</strong> obtained" +
         (levelDone ? " · Done ✓" : eligible === 0 ? " · nothing to get at this level" : " · " + (eligible - eligibleDone) + " to go") +
         '<div class="bar" title="Obtained out of what this level filter allows"><span style="width:' + (eligible ? Math.round(100 * eligibleDone / eligible) : 0) + '%"></span></div>';
     }
