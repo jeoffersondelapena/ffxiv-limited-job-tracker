@@ -270,6 +270,55 @@ test("Reset asks first, then clears the filters but never the checks", async () 
   assert.equal(p.count(), "1 / 124", "checks untouched");
 });
 
+test("the Fishing list: level bands, open world by default, category toggles, copy-on-tap, own checks", async () => {
+  const p = await load();
+  p.w.__copied = null;
+  Object.defineProperty(p.w.navigator, "clipboard", { value: { writeText: async (t) => { p.w.__copied = t; } }, configurable: true });
+  p.id("tab-fsh").click(); await sleep(10);
+  assert.equal(p.id("tab-fsh").getAttribute("aria-selected"), "true");
+  assert.match(p.id("count-fsh").textContent, /^0 \/ \d{4}$/, "about 1,700 fish");
+  // level bands in order, only open-world fish by default
+  const titles = p.groups().map((g) => g.title);
+  assert.deepEqual(titles.slice(0, 4), ["Level 1–15", "Level 16–30", "Level 31–40", "Level 41–50"]);
+  const shownDefault = p.$$(".entry.fish").length;
+  assert.ok(shownDefault > 1000 && shownDefault < p.$$(".entry.fish").length + 400, "roughly the open-world fish");
+  assert.equal(p.$$('.src[data-k="ocean"]').length, 0, "no ocean spots while the toggle is off");
+  // the irrelevant controls are hidden, the fish ones shown
+  assert.equal(p.w.getComputedStyle(p.id("openWorldOnly").closest("label")).display, "none");
+  assert.equal(p.w.getComputedStyle(p.id("sortSel").closest("label")).display, "none");
+  const ocean = p.$('#fishCats input[data-cat="ocean"]');
+  assert.ok(ocean, "an Ocean fishing toggle exists");
+  ocean.click(); await sleep(10);
+  assert.ok(p.$$(".entry.fish").length > shownDefault, "ocean-only fish appear");
+  assert.ok(p.$$('.src[data-k="ocean"]').length > 100);
+  ocean.click(); await sleep(10);
+  // sorted by level inside a band; Crayfish is level 2
+  const first = p.$$(".group[data-gkey]")[0];
+  const lvls = [...first.querySelectorAll(".entry.fish .no")].map((n) => Number(n.textContent.replace(/\D/g, "")));
+  assert.deepEqual(lvls, [...lvls].sort((a, b) => a - b));
+  assert.ok([...first.querySelectorAll(".fname")].some((b) => b.textContent === "Crayfish"));
+  // tap the name: copies, shows a toast, does not toggle the check
+  const btn = [...first.querySelectorAll(".fname")].find((b) => b.textContent === "Crayfish");
+  btn.click(); await sleep(10);
+  assert.equal(p.w.__copied, "Crayfish");
+  assert.equal(p.id("toast").hidden, false);
+  assert.match(p.id("toast").textContent, /Copied/);
+  assert.equal(p.dialogOpen(), false);
+  assert.equal(btn.closest(".entry").querySelector("input").checked, false);
+  // the box asks, then saves to the fishing document of this character
+  btn.closest(".entry").querySelector("input").click(); await sleep(10);
+  assert.equal(p.dialogOpen(), true);
+  await p.confirm();
+  assert.match(p.id("count-fsh").textContent, /^1 \//);
+  await sleep(FLUSH);
+  assert.equal(p.writes("progress/c1-fsh").length, 1);
+  assert.equal(p.writes("progress/c1-blu").length, 0);
+  // level filter counts only what the toggles allow
+  await p.input("levelInput", "15");
+  assert.match(p.id("lvlBox").textContent, /^Level ≤ 15: 1 of \d+ obtained/);
+  assert.deepEqual(plain(p.errors()), []);
+});
+
 test("each character keeps its own checks and its own level per list", async () => {
   const p = await load();
   await p.input("levelInput", "20");

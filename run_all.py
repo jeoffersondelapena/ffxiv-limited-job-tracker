@@ -5,8 +5,8 @@ try:
     sys.path.insert(0, './pylib'); import bs4  # noqa
 except ImportError:
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--quiet', '--target', './pylib', 'beautifulsoup4'])
-for d in ('pages/spells', 'pages/beasts', 'enemies', 'places'): os.makedirs(d, exist_ok=True)
-for step in ('scrape.py', 'fetch_pages.py', 'fetch_enemies.py', 'fetch_places.py', 'build_data.py', 'resolve_images.py', 'inject.py'):
+for d in ('pages/spells', 'pages/beasts', 'enemies', 'places', 'fish'): os.makedirs(d, exist_ok=True)
+for step in ('scrape.py', 'fetch_pages.py', 'fetch_enemies.py', 'fetch_places.py', 'build_data.py', 'resolve_images.py', 'fish_fetch.py', 'fish_build.py', 'inject.py'):
     print('==>', step, flush=True)
     subprocess.check_call([sys.executable, step], env={**os.environ, 'PYTHONPATH': './pylib'})
 print('Done. Review report.txt, then republish tracker.html to the hosted page.')

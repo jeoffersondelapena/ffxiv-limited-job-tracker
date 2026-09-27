@@ -1,9 +1,9 @@
 # FFXIV limited-job tracker
 
-Data pipeline for the private "Spellbook & Bestiary" page: a checklist of all Blue Mage spells and Beastmaster beasts for two characters, with level, location, and open-world filters.
+Data pipeline for the private "Spellbook, Bestiary & Fishing Log" page: a checklist of all Blue Mage spells, Beastmaster beasts and fish for two characters, with level, location, and open-world filters.
 
 - Live page: a private hosted copy of `tracker.html` (the link is deliberately kept out of this repo).
-- Source: ffxiv.consolegameswiki.com (Blue Magic Spellbook, Master's Bestiary, each spell/beast page, every linked enemy and place via the MediaWiki API).
+- Source: ffxiv.consolegameswiki.com (Blue Magic Spellbook, Master's Bestiary, Fish Guide, each spell/beast/fish page, every linked enemy and place via the MediaWiki API).
 
 ## Refresh after a patch
 
@@ -15,7 +15,8 @@ Then republish `tracker.html` to the same hosted page (republishing keeps saved 
 
 ## Invariants
 
-- `tracker.html` is generated. Edit `tracker.template.html` (page) or `build_data.py` (data rules), never the output.
+- `tracker.html` is generated. Edit `tracker.template.html` (page), `build_data.py` (spell and beast rules) or `fish_build.py` (fish rules), never the output.
+- `fish.json` keeps every fish from the Fish Guide; each spot is tagged open world / ocean / Diadem / island / moon / unknown and the page's toggles decide what is shown. Fish ids are the wiki's Garland Tools item ids, so saved checks survive a refresh.
 - Saved checks live in the hosted page's database (`progress/<c1|c2>-<blu|bst>`), not in this repo. Republishing never touches them.
 - `build_data.py` drops Savage, Unreal, Ultimate and level > 80 sources for Blue Mage (job cap), and only the hard-coded zone list counts as open world.
 - Download caches (`pages/`, `enemies/`, `places/`) are re-fetched when missing; delete them to force a full refresh.
@@ -31,4 +32,4 @@ npm install   # once: pulls jsdom for the page tests
 npm test
 ```
 
-`tests/page.test.mjs` drives the built page in jsdom against `tests/fake_db.js` (a stand-in for the cloud database with the same frozen-snapshot behaviour): filters, search, grouping, confirmations, uncheck-all, sync, and per-character isolation. `tests/test_data.py` checks the classification rules in `build_data.py` and invariants of the generated `data.json`. Run the tests after any page change and after every data refresh.
+`tests/page.test.mjs` drives the built page in jsdom against `tests/fake_db.js` (a stand-in for the cloud database with the same frozen-snapshot behaviour): filters, search, grouping, confirmations, uncheck-all, sync, and per-character isolation. `tests/test_data.py` checks the classification rules in `build_data.py` and invariants of the generated `data.json`; `tests/test_fish.py` checks `fish.json`. Run the tests after any page change and after every data refresh.

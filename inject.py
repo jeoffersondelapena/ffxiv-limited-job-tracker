@@ -1,6 +1,7 @@
 """Step 7: embed data.json (with resolved image URLs) into tracker.template.html -> tracker.html."""
 import json
 d = json.load(open('data.json')); urls = json.load(open('image_urls.json'))
+d['fsh'] = json.load(open('fish.json'))
 for l in d.values():
     for e in l:
         for s in e['sources']:
@@ -10,4 +11,4 @@ tpl = open('tracker.template.html').read()
 assert '/*__DATA__*/null' in tpl
 html = tpl.replace('/*__DATA__*/null', json.dumps(d, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/'), 1)
 open('tracker.html', 'w').write(html)
-print('tracker.html written:', len(html.encode()), 'bytes;', len(d['blu']), 'spells,', len(d['bst']), 'beasts')
+print('tracker.html written:', len(html.encode()), 'bytes;', len(d['blu']), 'spells,', len(d['bst']), 'beasts,', len(d['fsh']), 'fish')
