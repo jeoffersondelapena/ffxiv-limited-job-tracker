@@ -33,6 +33,18 @@ class FishDataTests(unittest.TestCase):
                 if s["k"] == "world":
                     self.assertNotIn(s["loc"], ("Unknown", "The Endeavor", "The Diadem"), (e["name"], s))
 
+    def test_fish_guide_page_and_number(self):
+        """The Fish Guide numbers fish 1-100 within each page, separately for fishing and spearfishing."""
+        seen = set()
+        for e in self.fish:
+            self.assertTrue(1 <= e["no"] <= 100, (e["name"], e["no"]))
+            self.assertGreaterEqual(e["page"], 1, e["name"])
+            key = (e["kind"], e["page"], e["no"])
+            self.assertNotIn(key, seen, e["name"])
+            seen.add(key)
+        first = next(e for e in self.fish if e["kind"] == "fish" and e["page"] == 1 and e["no"] == 1)
+        self.assertEqual(first["name"], "Malm Kelp")
+
     def test_sorted_by_level_then_name(self):
         keys = [((e["lv"] if e["lv"] is not None else 999), e["name"]) for e in self.fish]
         self.assertEqual(keys, sorted(keys))

@@ -107,7 +107,7 @@ def main():
                 if s[k] in (None, ''): del s[k]
         cats = sorted({s['k'] for s in spots})
         for c in cats: stats['spots in: ' + c] += 1
-        out.append(dict(id=fid, name=f['name'], lv=lv, kind=f['kind'], type=ftype, sources=spots))
+        out.append(dict(id=fid, name=f['name'], lv=lv, kind=f['kind'], type=ftype, page=int(f['page']), no=int(f['no']), sources=spots))
     out.sort(key=lambda e: (e['lv'] if e['lv'] is not None else 999, e['name']))
     json.dump(out, open('fish.json', 'w'), ensure_ascii=False, separators=(',', ':'))
     print(len(out), 'fish kept of', len(fish_list), 'listed;', sum(e['kind'] == 'spear' for e in out), 'spearfishing')

@@ -682,6 +682,8 @@
   .entry.done .fname { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line-strong); }
   .ftype { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 6px; }
   .flv-inline { display: none; color: var(--accent); font-weight: 600; font-size: 14px; margin-left: 6px; }
+  .flv-inline.show { display: inline; }
+  .fno-inline { display: none; color: var(--muted); font-weight: 600; font-size: 14px; margin-left: 6px; }
   .src[data-k="ocean"] .k, .src[data-k="diadem"] .k, .src[data-k="island"] .k, .src[data-k="moon"] .k { background: var(--chip-inst-soft); color: var(--chip-inst); }
   .src[data-k="unknown"] .k { background: var(--warn-soft); color: var(--warn); }
   .spots { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -697,7 +699,7 @@
     z-index: 7; padding: 9px 16px; border-radius: 999px; background: var(--ink); color: var(--bg);
     font-size: 15px; font-weight: 500; box-shadow: var(--shadow); max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  @media (max-width: 640px) { .entry.fish { grid-template-columns: 24px 1fr; } .entry.fish .no { display: none; } .entry.fish .spots { grid-column: 2 / -1; } .flv-inline { display: inline; } }
+  @media (max-width: 640px) { .entry.fish { grid-template-columns: 24px 1fr; } .entry.fish .no { display: none; } .entry.fish .spots { grid-column: 2 / -1; } .flv-inline, .fno-inline { display: inline; } }
   .empty {
     text-align: center;
     color: var(--muted);
@@ -755,6 +757,12 @@
           <option value="no-desc">by number, descending</option>
           <option value="az">A to Z</option>
           <option value="za">Z to A</option>
+        </select>
+      </label>
+      <label class="field fsh-only" for="fishSortSel">Sort
+        <select id="fishSortSel">
+          <option value="lv">by level, grouped by level band</option>
+          <option value="no">by number, grouped by Fish Guide page</option>
         </select>
       </label>
     </div>
@@ -876,7 +884,7 @@
 
   // ---------- state ----------
   const ui = Object.assign({
-    list: "blu", char: "c1", hideDone: false, groupByLoc: false, sort: "no",
+    list: "blu", char: "c1", hideDone: false, groupByLoc: false, sort: "no", fishSort: "lv",
     search: "", searchBy: {}, levels: {}, levelOn: {}, cats: {}
   }, readLS(LS_UI, {}));
   delete ui.collapsed; // fold state from an earlier version; no longer stored
@@ -933,7 +941,7 @@
   }
 
   // Every synced document: how to build its body, how to adopt a cloud snapshot, and whether this device has anything worth pushing.
-  const SYNCED_UI = ["char", "list", "hideDone", "groupByLoc", "sort"];
+  const SYNCED_UI = ["char", "list", "hideDone", "groupByLoc", "sort", "fishSort"];
   const DEFAULT_NAMES = { c1: "Character 1", c2: "Character 2" };
   const DOCS = {};
   for (const key of Object.keys(progress)) {
@@ -956,6 +964,7 @@
     adopt: (d) => {
       for (const k of SYNCED_UI) if (k in d) ui[k] = d[k];
       if (!SORTS.includes(ui.sort)) ui.sort = "no";
+      if (!FISH_SORTS.includes(ui.fishSort)) ui.fishSort = "lv";
       if (!CHARS.includes(ui.char)) ui.char = "c1";
       if (!LISTS[ui.list]) ui.list = "blu";
       if (ui.list === "fsh" && !LISTS.fsh.length) ui.list = "blu";
@@ -1111,16 +1120,28 @@
   }
   const KIND_ORDER = { world: 0, default: 0, totem: 1, quest: 1, fate: 2, leve: 3, questmob: 4, hunt: 5, map: 6 };
   const SORTS = ["no", "no-desc", "az", "za"];
+  const FISH_SORTS = ["lv", "no"]; // the Fishing tab sorts by level (grouped by band) or by Fish Guide number (grouped by page)
+  function fishByNo() { return ui.fishSort === "no"; }
   function bandOf(lv) {
     if (lv === null || lv === undefined || lv > 100) return { key: "band:unknown", title: "Level unknown", kind: "band", order: BANDS.length, minLv: 999 };
     const i = BANDS.findIndex(([a, z]) => lv >= a && lv <= z);
     const [a, z] = BANDS[Math.max(i, 0)];
     return { key: "band:" + a, title: "Level " + a + "–" + z, kind: "band", order: Math.max(i, 0), minLv: a };
   }
+  function pageOf(e) {
+    const spear = e.kind === "spear";
+    return { key: "page:" + (spear ? "spear" : "fish") + ":" + e.page, title: (spear ? "Spearfishing · Page " : "Page ") + e.page, kind: "page", order: (spear ? 1000 : 0) + e.page, minLv: 0 };
+  }
+  function fishGroupOf(e) { return fishByNo() ? pageOf(e) : bandOf(e.lv); }
+  function fishOrder(a, b) {
+    if (fishByNo()) return (a.kind === "spear") - (b.kind === "spear") || a.page - b.page || a.no - b.no;
+    return (a.lv ?? 999) - (b.lv ?? 999) || a.name.localeCompare(b.name);
+  }
   function fishRow(entry, sources) {
     const done = !!progress[progKey()][entry.id];
     const id = "e-" + ui.list + "-" + entry.id + "-" + (rowSeq++);
     const lvText = entry.lv === null || entry.lv === undefined ? "Lv ?" : "Lv " + entry.lv;
+    const byNo = fishByNo();
     const spots = sources.map((s) => {
       const k = KIND[s.k] || KIND.world;
       return '<div class="spot" data-k="' + esc(s.k) + '"><span class="k" title="' + esc(k.label) + '">' + esc(k.short) + "</span>" +
@@ -1130,9 +1151,10 @@
     }).join("");
     return '<div class="entry fish' + (done ? " done" : "") + '" data-id="' + entry.id + '">' +
       '<input type="checkbox" id="' + id + '" ' + (done ? "checked" : "") + ' aria-label="Obtained: ' + esc(entry.name) + '">' +
-      '<span class="no">' + lvText + "</span>" +
+      '<span class="no">' + (byNo ? "#" + entry.no : lvText) + "</span>" +
       '<div><button type="button" class="fname" data-copy="' + esc(entry.name) + '" title="Tap to copy the name">' + esc(entry.name) + "</button>" +
-      '<span class="flv-inline">' + lvText + "</span>" +
+      (byNo ? '<span class="fno-inline">#' + entry.no + "</span>" : "") +
+      '<span class="flv-inline' + (byNo ? " show" : "") + '">' + lvText + "</span>" +
       (entry.kind === "spear" ? '<span class="ftype">spearfishing</span>' : entry.type ? '<span class="ftype">' + esc(entry.type) + "</span>" : "") + "</div>" +
       '<div class="spots">' + spots + "</div></div>";
   }
@@ -1276,7 +1298,7 @@
       const groups = new Map();
       for (const r of rows) {
         if (isFish) {
-          const g = bandOf(r.e.lv);
+          const g = fishGroupOf(r.e);
           if (!groups.has(g.key)) groups.set(g.key, { ...g, items: new Map() });
           groups.get(g.key).items.set(r.e.id, { e: r.e, srcs: r.counting, isDone: r.isDone, counting: r.counting });
           continue;
@@ -1292,16 +1314,16 @@
       }
       const list = [...groups.values()].sort((a, b) => a.order - b.order || a.minLv - b.minLv || a.title.localeCompare(b.title));
       for (const g of list) {
-        const k = g.kind === "band" ? { label: "Fishing log" } : (KIND[g.kind] || KIND.world);
-        const items = [...g.items.values()].sort((a, b) => isFish ? ((a.e.lv ?? 999) - (b.e.lv ?? 999) || a.e.name.localeCompare(b.e.name)) : entryOrder(a.e, b.e));
+        const k = g.kind === "band" ? { label: "Fishing log" } : g.kind === "page" ? { label: "Fish Guide" } : (KIND[g.kind] || KIND.world);
+        const items = [...g.items.values()].sort((a, b) => isFish ? fishOrder(a.e, b.e) : entryOrder(a.e, b.e));
         const got = items.filter((it) => it.isDone).length;
         const complete = got === items.length;
         const visibleItems = ui.hideDone ? items.filter((it) => !it.isDone) : items;
         shown += visibleItems.length;
         const collapsed = isFolded(g.key, complete);
-        html += '<section class="group' + (g.kind === "band" ? " band" : "") + (complete ? " complete" : "") + (collapsed ? " collapsed" : "") + '" id="' + esc(groupDomId(g.key)) + '" data-gkey="' + esc(g.key) + '">' +
+        html += '<section class="group' + (isFish ? " band" : "") + (complete ? " complete" : "") + (collapsed ? " collapsed" : "") + '" id="' + esc(groupDomId(g.key)) + '" data-gkey="' + esc(g.key) + '">' +
           '<header role="button" tabindex="0" aria-expanded="' + (!collapsed) + '" title="Click to ' + (collapsed ? "expand" : "collapse") + '"><h2>' + esc(g.title) + "</h2>" +
-          statHtml(got, items.length, g.kind === "band" ? "stat-lg" : "stat-sm", "", "Obtained in this group") +
+          statHtml(got, items.length, isFish ? "stat-lg" : "stat-sm", "", "Obtained in this group") +
           '<span class="meta">' + esc(k.label) + (!isFish && isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + (collapsed && visibleItems.length ? " · " + visibleItems.length + " hidden" : "") + "</span></header>";
         for (const it of visibleItems) {
           if (isFish) { html += fishRow(it.e, it.srcs); continue; }
@@ -1333,7 +1355,7 @@
     if (lv !== null) statCard($lvlBox, "Level ≤ <b>" + lv + "</b>", eligibleDone, eligible, levelDone ? "Done ✓" : eligible === 0 ? "nothing to get at this level" : (eligible - eligibleDone) + " to go", isFish ? "secondary" : "primary");
     $summary.innerHTML =
       "<span><strong>" + esc(names[ui.char]) + "</strong> · " + listName(ui.list) + "</span>" +
-      "<span>Showing " + shown + (grouped ? (isFish ? " grouped by level" : " grouped by location") : "") + (lv !== null ? " at level ≤ " + lv : "") +
+      "<span>Showing " + shown + (grouped ? (isFish ? (fishByNo() ? " grouped by Fish Guide page" : " grouped by level") : " grouped by location") : "") + (lv !== null ? " at level ≤ " + lv : "") +
       (grouped && shown ? ' · <button type="button" class="linklike" data-fold="collapse">Collapse all</button> · <button type="button" class="linklike" data-fold="expand">Expand all</button>' : "") + "</span>";
     const $cbLevel = document.getElementById("cbLevel");
     $cbLevel.hidden = lv === null;
@@ -1352,6 +1374,7 @@
     for (const id of ["hideDone", "groupByLoc"]) document.getElementById(id).checked = !!ui[id];
     syncCatRow();
     document.getElementById("sortSel").value = SORTS.includes(ui.sort) ? ui.sort : "no";
+    document.getElementById("fishSortSel").value = FISH_SORTS.includes(ui.fishSort) ? ui.fishSort : "lv";
   }
 
   let lastCleared = null;
@@ -1497,6 +1520,7 @@
   }
   syncControls();
   document.getElementById("sortSel").addEventListener("change", (ev) => { ui.sort = SORTS.includes(ev.target.value) ? ev.target.value : "no"; saveUI(); render(); });
+  document.getElementById("fishSortSel").addEventListener("change", (ev) => { ui.fishSort = FISH_SORTS.includes(ev.target.value) ? ev.target.value : "lv"; saveUI(); render(); });
   const $search = document.getElementById("searchInput");
   $search.value = currentSearch();
   $search.addEventListener("input", () => { currentSearch(); ui.searchBy[ui.list] = $search.value; writeLS(LS_UI, ui); render(); });

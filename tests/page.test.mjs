@@ -314,9 +314,24 @@ test("the Fishing list: level bands, open world by default, category toggles, co
   assert.ok(p.$$('.spot[data-k="ocean"]').length > 100);
   await p.cat("ocean", false);
   // sorted by level inside a band; Crayfish is level 2
-  const first = p.$$(".group[data-gkey]")[0];
+  let first = p.$$(".group[data-gkey]")[0];
   const lvls = [...first.querySelectorAll(".entry.fish .no")].map((n) => Number(n.textContent.replace(/\D/g, "")));
   assert.deepEqual(lvls, [...lvls].sort((a, b) => a - b));
+  // by Fish Guide number: grouped by page, numbered rows, a setting of its own that syncs
+  const chooseFish = async (v) => { p.id("fishSortSel").value = v; p.id("fishSortSel").dispatchEvent(new p.w.Event("change", { bubbles: true })); await sleep(10); };
+  assert.notEqual(p.w.getComputedStyle(p.id("fishSortSel").closest("label")).display, "none", "the fish sort is offered on the Fishing tab");
+  await chooseFish("no");
+  assert.deepEqual(p.groups().map((g) => g.title).slice(0, 2), ["Page 1", "Page 2"]);
+  const firstByNo = p.$(".group.band .entry.fish");
+  assert.equal(firstByNo.querySelector(".fname").textContent, "Malm Kelp");
+  assert.equal(firstByNo.querySelector(".no").textContent, "#1");
+  assert.ok(p.groups().some((g) => g.title === "Spearfishing · Page 1"), "spearfishing pages are numbered separately");
+  await sleep(FLUSH);
+  assert.equal(plain(p.writes("settings/ui").at(-1).data).fishSort, "no", "the choice is written to the cloud");
+  assert.equal(p.id("sortSel").value, "no", "the other lists keep their own sort");
+  await chooseFish("lv");
+  assert.equal(p.groups()[0].title, "Level 1–15", "by level is the default and comes back");
+  first = p.$$(".group[data-gkey]")[0]; // re-query: the sort change re-rendered the list
   assert.ok([...first.querySelectorAll(".fname")].some((b) => b.textContent === "Crayfish"));
   // tap the name: copies, shows a toast, does not toggle the check
   const btn = [...first.querySelectorAll(".fname")].find((b) => b.textContent === "Crayfish");
