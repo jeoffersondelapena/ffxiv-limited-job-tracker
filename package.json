@@ -1,5 +1,5 @@
 {
-  "name": "ffxiv-limited-job-tracker",
+  "name": "ffxiv-log-tracker",
   "version": "1.0.0",
   "directories": {
     "test": "tests"
@@ -11,13 +11,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jeoffersondelapena/ffxiv-limited-job-tracker.git"
+    "url": "git+https://github.com/jeoffersondelapena/ffxiv-log-tracker.git"
   },
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/jeoffersondelapena/ffxiv-limited-job-tracker/issues"
+    "url": "https://github.com/jeoffersondelapena/ffxiv-log-tracker/issues"
   },
-  "homepage": "https://github.com/jeoffersondelapena/ffxiv-limited-job-tracker#readme",
+  "homepage": "https://github.com/jeoffersondelapena/ffxiv-log-tracker#readme",
   "private": "true",
   "devDependencies": {
     "jsdom": "^24.1.3"

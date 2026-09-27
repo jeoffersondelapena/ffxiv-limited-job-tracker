@@ -49,6 +49,8 @@ async function load({ seed, noDb } = {}) {
     confirm: async () => { d.getElementById("confirmForm").dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true })); await sleep(10); },
     cancel: async () => { d.getElementById("confirmCancel").click(); await sleep(10); },
     dialogOpen: () => d.getElementById("confirmDialog").hasAttribute("open"),
+    cat: async (k, on) => { const el = d.querySelector('#catRow input[data-cat="' + k + '"]'); if (!el) throw new Error("no toggle " + k); if (el.checked !== on) { el.click(); await sleep(10); } },
+    cats: () => [...d.querySelectorAll("#catRow input[data-cat]")].map((el) => el.dataset.cat),
     writes: (p) => w.__writes.filter((x) => !p || x.path === p),
     errors: () => w.__errors,
   };
@@ -71,24 +73,24 @@ test("works without the cloud, saving on the device only", async () => {
 
 test("a check after a frozen snapshot is applied and written once", async () => {
   const p = await load();
-  p.box(2).click(); await sleep(10);
+  p.box(8).click(); await sleep(10);
   assert.equal(p.dialogOpen(), true);
   assert.equal(p.count(), "1 / 124", "nothing changes before confirmation");
   await p.confirm();
-  assert.equal(p.box(2).checked, true);
+  assert.equal(p.box(8).checked, true);
   assert.equal(p.count(), "2 / 124");
   await sleep(FLUSH);
   const writes = p.writes("progress/c1-blu");
   assert.equal(writes.length, 1);
-  assert.deepEqual(plain(writes[0].data.done), { 2: true, 17: true });
+  assert.deepEqual(plain(writes[0].data.done), { 8: true, 17: true });
   assert.deepEqual(plain(p.errors()), []);
 });
 
 test("cancelling the confirmation reverts the box and writes nothing", async () => {
   const p = await load();
-  p.box(2).click(); await sleep(10);
+  p.box(8).click(); await sleep(10);
   await p.cancel();
-  assert.equal(p.box(2).checked, false);
+  assert.equal(p.box(8).checked, false);
   assert.equal(p.count(), "1 / 124");
   await sleep(FLUSH);
   assert.equal(p.writes("progress/c1-blu").length, 0);
@@ -98,7 +100,8 @@ test("a name tap toggles the one entry and every location copy follows", async (
   const p = await load();
   await p.input("levelInput", "19");
   await p.set("groupByLoc", true);
-  assert.equal(p.boxes(17).length, 5, "Blood Drain appears in five locations at level 19");
+  await p.cat("dungeon", true);
+  assert.equal(p.boxes(17).length, 5, "Blood Drain appears in five locations at level 19 with dungeons included");
   p.$$('.entry[data-id="17"] label.name')[1].click(); await sleep(10);
   assert.equal(p.dialogOpen(), true);
   await p.confirm();
@@ -108,11 +111,12 @@ test("a name tap toggles the one entry and every location copy follows", async (
 
 test("search only matches sources that count under the current filters", async () => {
   const p = await load();
-  await p.set("openWorldOnly", true);
   await p.input("searchInput", "Haukke");
-  assert.deepEqual(p.names(), [], "a dungeon source does not count under open world only");
-  await p.set("openWorldOnly", false);
+  assert.deepEqual(p.names(), [], "a dungeon source does not count until Dungeons is ticked");
+  await p.cat("dungeon", true);
   assert.ok(p.names().includes("Ice Spikes"));
+  await p.cat("dungeon", false);
+  await p.input("searchInput", "");
   await p.input("levelInput", "5");
   await p.input("searchInput", "Cave Bat");
   assert.deepEqual(p.names(), [], "Cave Bat is level 7, above the filter");
@@ -132,15 +136,18 @@ test("the level box counts what is obtainable at that level and turns green when
   assert.equal(p.id("lvlBox").hidden, true);
 });
 
-test("grouped view: no instance groups under open world only, also-in lines, completion badges, fold defaults", async () => {
+test("grouped view: open world by default, opt-in dungeons, also-in lines, completion badges, fold defaults", async () => {
   const p = await load();
   await p.set("groupByLoc", true);
+  assert.ok(!p.groups().some((x) => x.title === "Haukke Manor"), "dungeon groups are off by default");
+  assert.deepEqual(p.cats(), ["dungeon", "trial", "raid", "carnivale", "guildhest", "tdungeon", "hunt", "map"], "the Include row lists what Blue Magic has");
+  await p.cat("dungeon", true);
   const g = p.groups();
+  assert.ok(g.some((x) => x.title === "Haukke Manor"), "ticking Dungeons adds dungeon groups");
   const sastasha = g.find((x) => x.title === "Sastasha");
   assert.ok(sastasha && sastasha.done && sastasha.collapsed, "a fully obtained location starts folded");
   assert.ok(g.find((x) => x.title === "Central Shroud" && !x.collapsed), "an incomplete location starts open");
-  await p.set("openWorldOnly", true);
-  assert.ok(!p.groups().some((x) => x.title === "Haukke Manor"), "dungeon groups are left out");
+  await p.cat("dungeon", false);
   const central = p.$$(".group").find((s) => s.querySelector("h2").textContent === "Central Shroud");
   const also = central.querySelector('.entry[data-id="17"] .also').textContent;
   assert.match(also, /^Also in Lower La Noscea \(open world, Lv 7\)/);
@@ -169,12 +176,14 @@ test("uncheck-all needs the word reset, and undo restores the previous set", asy
 
 test("changes made on another device are adopted; typing in the search box never writes", async () => {
   const p = await load();
-  await p.w.__db.doc("settings/ui").set({ char: "c2", list: "bst", hideDone: true, openWorldOnly: false, rareCounts: false, groupByLoc: true, levels: { "c2-bst": 33 } });
+  await p.w.__db.doc("settings/ui").set({ char: "c2", list: "bst", hideDone: true, groupByLoc: true, levels: { "c2-bst": 33 }, cats: { bst: { dungeon: true } } });
   await sleep(20);
   assert.equal(p.id("char-c2").getAttribute("aria-selected"), "true");
   assert.equal(p.id("tab-bst").getAttribute("aria-selected"), "true");
   assert.equal(p.id("hideDone").checked, true);
   assert.equal(p.id("levelInput").value, "33");
+  assert.equal(p.$('#catRow input[data-cat="dungeon"]').checked, true, "the other device's Dungeons tick shows");
+  assert.ok(p.groups().some((x) => x.title === "Copperbell Mines"));
   await p.w.__db.doc("settings/chars").set({ c1: "Main", c2: "Alt" });
   await sleep(20);
   assert.equal(p.$("#char-c2 .cname").textContent, "Alt");
@@ -217,7 +226,8 @@ test("sorting by name applies to the flat list and inside locations, and syncs",
   await choose("za");
   assert.deepEqual(p.names(), sorted(p.names()).reverse());
   await choose("no-desc");
-  assert.equal(p.names()[0], "Being Mortal", "highest number first");
+  const ids = p.$$(".entry").map((e) => Number(e.dataset.id));
+  assert.equal(ids[0], Math.max(...ids), "highest number first");
   await choose("az");
   await p.set("groupByLoc", true);
   for (const g of p.$$(".group[data-gkey]")) {
@@ -234,16 +244,18 @@ test("sorting by name applies to the flat list and inside locations, and syncs",
 
 test("the level filter can be switched off without losing its value, per list, and syncs", async () => {
   const p = await load();
+  const all = p.names().length;
   await p.input("levelInput", "12");
   assert.equal(p.id("lvlBox").hidden, false);
+  assert.ok(p.names().length < all, "the level filter narrows the list");
   await p.set("levelOn", false);
   assert.equal(p.id("lvlBox").hidden, true, "filter off: no level box");
   assert.equal(p.id("levelInput").value, "12", "the value is kept");
   assert.equal(p.id("levelInput").disabled, false, "still editable while off");
-  assert.equal(p.names().length, 124, "nothing filtered");
+  assert.equal(p.names().length, all, "nothing filtered");
   await p.input("levelInput", "20");
   assert.equal(p.id("levelOn").checked, false, "typing does not flip the switch");
-  assert.equal(p.names().length, 124, "still not filtering");
+  assert.equal(p.names().length, all, "still not filtering");
   await sleep(FLUSH);
   assert.deepEqual(plain(p.writes("settings/ui").at(-1).data.levelOn), { "c1-blu": false });
   p.id("tab-bst").click(); await sleep(10);
@@ -257,15 +269,15 @@ test("the level filter can be switched off without losing its value, per list, a
 test("Reset asks first, then clears the filters but never the checks", async () => {
   const p = await load();
   await p.input("levelInput", "12");
-  await p.set("openWorldOnly", true);
+  await p.cat("trial", true);
   p.id("resetBtn").click(); await sleep(10);
   assert.equal(p.dialogOpen(), true);
   assert.match(p.id("confirmTitle").textContent, /Reset the filters\?/);
   await p.cancel();
-  assert.equal(p.id("openWorldOnly").checked, true, "cancel keeps the filters");
+  assert.equal(p.$('#catRow input[data-cat="trial"]').checked, true, "cancel keeps the filters");
   p.id("resetBtn").click(); await sleep(10);
   await p.confirm();
-  assert.equal(p.id("openWorldOnly").checked, false);
+  assert.equal(p.$('#catRow input[data-cat="trial"]').checked, false);
   assert.equal(p.id("levelInput").value, "");
   assert.equal(p.count(), "1 / 124", "checks untouched");
 });
@@ -282,16 +294,15 @@ test("the Fishing list: level bands, open world by default, category toggles, co
   assert.deepEqual(titles.slice(0, 4), ["Level 1–15", "Level 16–30", "Level 31–40", "Level 41–50"]);
   const shownDefault = p.$$(".entry.fish").length;
   assert.ok(shownDefault > 1000 && shownDefault < p.$$(".entry.fish").length + 400, "roughly the open-world fish");
-  assert.equal(p.$$('.src[data-k="ocean"]').length, 0, "no ocean spots while the toggle is off");
-  // the irrelevant controls are hidden, the fish ones shown
-  assert.equal(p.w.getComputedStyle(p.id("openWorldOnly").closest("label")).display, "none");
+  assert.equal(p.$$('.spot[data-k="ocean"]').length, 0, "no ocean spots while the toggle is off");
+  // the blue-mage controls are hidden, the fish categories offered
+  assert.equal(p.w.getComputedStyle(p.id("groupByLoc").closest("label")).display, "none");
   assert.equal(p.w.getComputedStyle(p.id("sortSel").closest("label")).display, "none");
-  const ocean = p.$('#fishCats input[data-cat="ocean"]');
-  assert.ok(ocean, "an Ocean fishing toggle exists");
-  ocean.click(); await sleep(10);
+  assert.deepEqual(p.cats(), ["ocean", "diadem", "unknown"]);
+  await p.cat("ocean", true);
   assert.ok(p.$$(".entry.fish").length > shownDefault, "ocean-only fish appear");
-  assert.ok(p.$$('.src[data-k="ocean"]').length > 100);
-  ocean.click(); await sleep(10);
+  assert.ok(p.$$('.spot[data-k="ocean"]').length > 100);
+  await p.cat("ocean", false);
   // sorted by level inside a band; Crayfish is level 2
   const first = p.$$(".group[data-gkey]")[0];
   const lvls = [...first.querySelectorAll(".entry.fish .no")].map((n) => Number(n.textContent.replace(/\D/g, "")));
@@ -316,6 +327,8 @@ test("the Fishing list: level bands, open world by default, category toggles, co
   // level filter counts only what the toggles allow
   await p.input("levelInput", "15");
   assert.match(p.id("lvlBox").textContent, /^Level ≤ 15: 1 of \d+ obtained/);
+  assert.equal(p.$$(".spot .snote").length > 0, true, "bait lines are shown");
+  assert.ok(!p.$$(".spot .snote").some((n) => /\*|Condition:|Weather:/.test(n.textContent)), "no parser leftovers in notes");
   assert.deepEqual(plain(p.errors()), []);
 });
 

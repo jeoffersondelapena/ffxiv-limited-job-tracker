@@ -1,4 +1,4 @@
-# FFXIV limited-job tracker
+# FFXIV log tracker
 
 Data pipeline for the private "Spellbook, Bestiary & Fishing Log" page: a checklist of all Blue Mage spells, Beastmaster beasts and fish for two characters, with level, location, and open-world filters.
 

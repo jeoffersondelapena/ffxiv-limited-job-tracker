@@ -52,7 +52,7 @@ def main():
         spots = []
         for sec in re.finditer(r'^===\s*\[\[(?:Fishing|Spearfishing) Log: ([^\]|]+)(?:\|[^\]]*)?\]\][^\n]*===\s*$(.*?)(?=^==|\Z)', wt, re.M | re.S):
             hole = strip_links(sec.group(1)); body = sec.group(2)
-            loc = re.search(r"\*'''\[\[Location\]\]''':\s*(.*)", body)
+            loc = re.search(r"\*'''\[\[Location\]\]''':[ \t]*(.*)", body)
             zone = xy = None
             if loc:
                 z = re.search(r'\[\[([^\]|]+)', loc.group(1))
@@ -62,10 +62,10 @@ def main():
             if zone not in zones and zone not in CATEGORY_ZONES: zone = hole_zone.get(hole) or zone
             region = hole_region.get(hole)
             cat = ('world' if zone in zones else CATEGORY_ZONES.get(zone) or CATEGORY_REGIONS.get(region) or 'unknown')
-            hl = re.search(r"Hole Level''':\s*(\d+)", body)
+            hl = re.search(r"Hole Level''':[ \t]*(\d+)", body)
             notes = []
-            for label, pat in (('bait', r"\[\[Baits?\]\]''':\s*(.*)"), ('mooch', r"\[\[Mooch\]\]ed From''':\s*(.*)"),
-                               ('weather', r"\[\[Weather\]\]''':\s*(.*)"), ('time', r"Time''':\s*(.*)"), ('', r"Condition''':\s*(.*)")):
+            for label, pat in (('bait', r"\[\[Baits?\]\]''':[ \t]*(.*)"), ('mooch', r"\[\[Mooch\]\]ed From''':[ \t]*(.*)"),
+                               ('weather', r"\[\[Weather\]\]''':[ \t]*(.*)"), ('time', r"Time''':[ \t]*(.*)"), ('', r"Condition''':[ \t]*(.*)")):
                 mm = re.search(pat, body)
                 if mm:
                     v = strip_links(mm.group(1))
