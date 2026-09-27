@@ -35,14 +35,15 @@ async function load({ seed, noDb } = {}) {
     $: (sel) => d.querySelector(sel),
     $$: (sel) => [...d.querySelectorAll(sel)],
     id: (i) => d.getElementById(i),
-    count: () => d.getElementById("count-blu").textContent,
-    countBst: () => d.getElementById("count-bst").textContent,
+    stat: (i) => { const el = d.getElementById(i); return el.dataset.got + " / " + el.dataset.total; },
+    count: () => { const el = d.getElementById("count-blu"); return el.dataset.got + " / " + el.dataset.total; },
+    countBst: () => { const el = d.getElementById("count-bst"); return el.dataset.got + " / " + el.dataset.total; },
     box: (entryId) => d.querySelector('.entry[data-id="' + entryId + '"] input'),
     boxes: (entryId) => [...d.querySelectorAll('.entry[data-id="' + entryId + '"] input')],
     names: () => [...d.querySelectorAll(".entry label.name")].map((l) => l.firstChild.textContent.trim()),
     groups: () => [...d.querySelectorAll(".group[data-gkey]")].map((g) => ({
       title: g.querySelector("h2").textContent.trim(), meta: g.querySelector(".meta").textContent,
-      done: !!g.querySelector(".done-badge"), collapsed: g.classList.contains("collapsed"), rows: g.querySelectorAll(".entry").length,
+      done: g.querySelector("header .stat").classList.contains("complete"), collapsed: g.classList.contains("collapsed"), rows: g.querySelectorAll(".entry").length,
     })),
     set: async (toggleId, on) => { const el = d.getElementById(toggleId); if (el.checked !== on) { el.click(); await sleep(10); } },
     input: async (inputId, value) => { const el = d.getElementById(inputId); el.value = value; el.dispatchEvent(new w.Event("input", { bubbles: true })); await sleep(10); },
@@ -127,11 +128,15 @@ test("search only matches sources that count under the current filters", async (
 test("the level box counts what is obtainable at that level and turns green when complete", async () => {
   const p = await load();
   await p.input("levelInput", "12");
-  assert.equal(p.id("lvlBox").textContent.trim(), "Level ≤ 12: 1 of 15 obtained · 14 to go");
-  assert.equal(p.id("cbLevel").textContent, "≤12: 1/15");
+  assert.equal(p.stat("lvlBox"), "1 / 15");
+  assert.match(p.id("lvlBox").textContent, /Level ≤ 12.*14 to go/s);
+  assert.equal(p.stat("cbLevel"), "1 / 15");
+  assert.match(p.id("cbLevel").textContent, /Lv ≤ 12/);
   for (;;) { const b = p.$$(".entry input").find((x) => !x.checked); if (!b) break; b.click(); await sleep(5); await p.confirm(); } // re-query: each confirm re-renders
-  assert.match(p.id("lvlBox").textContent, /15 of 15 obtained · Done ✓/);
+  assert.equal(p.stat("lvlBox"), "15 / 15");
+  assert.match(p.id("lvlBox").textContent, /100%.*Done ✓/s);
   assert.ok(p.id("cbLevel").classList.contains("complete"));
+  assert.equal(p.stat("allBox"), "15 / 124");
   await p.input("levelInput", "");
   assert.equal(p.id("lvlBox").hidden, true);
 });
@@ -151,7 +156,9 @@ test("grouped view: open world by default, opt-in dungeons, also-in lines, compl
   const central = p.$$(".group").find((s) => s.querySelector("h2").textContent === "Central Shroud");
   const also = central.querySelector('.entry[data-id="17"] .also').textContent;
   assert.match(also, /^Also in Lower La Noscea \(open world, Lv 7\)/);
-  assert.match(central.querySelector(".meta").textContent, /\d+ of \d+ obtained/);
+  const badge = central.querySelector("header .stat");
+  assert.match(badge.textContent, /^\d+\/ \d+ · \d+%$/, "the group badge reads N / M · P%");
+  assert.equal(badge.dataset.total, String(central.querySelectorAll(".entry").length));
 });
 
 test("uncheck-all needs the word reset, and undo restores the previous set", async () => {
@@ -288,7 +295,7 @@ test("the Fishing list: level bands, open world by default, category toggles, co
   Object.defineProperty(p.w.navigator, "clipboard", { value: { writeText: async (t) => { p.w.__copied = t; } }, configurable: true });
   p.id("tab-fsh").click(); await sleep(10);
   assert.equal(p.id("tab-fsh").getAttribute("aria-selected"), "true");
-  assert.match(p.id("count-fsh").textContent, /^0 \/ \d{4}$/, "about 1,700 fish");
+  assert.match(p.stat("count-fsh"), /^0 \/ \d{4}$/, "about 1,700 fish");
   // level bands in order, only open-world fish by default
   const titles = p.groups().map((g) => g.title);
   assert.deepEqual(titles.slice(0, 4), ["Level 1–15", "Level 16–30", "Level 31–40", "Level 41–50"]);
@@ -320,13 +327,13 @@ test("the Fishing list: level bands, open world by default, category toggles, co
   btn.closest(".entry").querySelector("input").click(); await sleep(10);
   assert.equal(p.dialogOpen(), true);
   await p.confirm();
-  assert.match(p.id("count-fsh").textContent, /^1 \//);
+  assert.match(p.stat("count-fsh"), /^1 \//);
   await sleep(FLUSH);
   assert.equal(p.writes("progress/c1-fsh").length, 1);
   assert.equal(p.writes("progress/c1-blu").length, 0);
   // level filter counts only what the toggles allow
   await p.input("levelInput", "15");
-  assert.match(p.id("lvlBox").textContent, /^Level ≤ 15: 1 of \d+ obtained/);
+  assert.match(p.stat("lvlBox"), /^1 \/ \d+$/);
   assert.equal(p.$$(".spot .snote").length > 0, true, "bait lines are shown");
   assert.ok(!p.$$(".spot .snote").some((n) => /\*|Condition:|Weather:/.test(n.textContent)), "no parser leftovers in notes");
   assert.deepEqual(plain(p.errors()), []);
