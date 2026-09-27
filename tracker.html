@@ -163,7 +163,7 @@
     margin-bottom: 16px;
   }
   .status {
-    font-size: 12.5px;
+    font-size: 14px;
     color: var(--muted);
     display: inline-flex;
     align-items: center;
@@ -193,7 +193,7 @@
     box-shadow: var(--shadow);
     font-size: 15.5px;
   }
-  .context-bar .cb-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .context-bar .cb-label { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
   .context-bar .cb-char {
     font-family: "Cinzel", "Times New Roman", serif;
     font-weight: 600;
@@ -206,7 +206,7 @@
   .context-bar .cb-sep { color: var(--muted); }
   .context-bar .jicon { width: 28px; height: 28px; }
   .context-bar .stat { flex: none; }
-  .context-bar .status { margin: 0 0 0 auto; white-space: nowrap; font-size: 14px; }
+  .context-bar .status { margin: 0 0 0 auto; white-space: nowrap; font-size: 15px; }
   .context-bar .status::before { width: 10px; height: 10px; }
   .to-top {
     position: fixed;
@@ -215,7 +215,7 @@
     z-index: 6;
     appearance: none;
     font: inherit;
-    font-size: 13.5px;
+    font-size: 14.5px;
     font-weight: 600;
     padding: 9px 16px;
     border: 1px solid var(--accent);
@@ -278,8 +278,8 @@
   .stat.complete { border-color: var(--done); color: #ffffff; }
   .stat.complete .fill { background: var(--done); }
   .stat.complete .txt b { color: #ffffff; }
-  .stat-sm { font-size: 12.5px; padding: 1px 9px; }
-  .stat-md { font-size: 14.5px; padding: 3px 12px; }
+  .stat-sm { font-size: 14px; padding: 1px 9px; }
+  .stat-md { font-size: 15.5px; padding: 3px 12px; }
   #char-c1 .stat.partial { border-color: var(--c1); color: var(--c1); }
   #char-c1 .stat.partial .fill { background: var(--c1-soft); }
   #char-c1 .stat.partial .txt b { color: var(--c1); }
@@ -288,19 +288,36 @@
   #char-c2 .stat.partial .txt b { color: var(--c2); }
   .statcards { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 2px 16px; }
   .statcard { flex: 1 1 240px; min-width: 0; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 12px 16px 13px; }
-  .statcard .sc-label { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-  .statcard .sc-label b { font-size: 15px; letter-spacing: 0; color: var(--accent); }
+  .statcard .sc-label { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .statcard .sc-label b { font-size: 16px; letter-spacing: 0; color: var(--accent); }
   .statcard .sc-num { display: flex; align-items: baseline; gap: 10px; margin-top: 2px; font-variant-numeric: tabular-nums; }
   .statcard .sc-num b { font-size: 26px; font-weight: 700; color: var(--ink); }
   .statcard .sc-num small { font-size: 15px; font-weight: 600; color: var(--muted); }
   .statcard .sc-num em { font-style: normal; font-size: 17px; font-weight: 700; color: var(--accent); margin-left: auto; }
   .statcard .bar { margin: 8px 0 6px; height: 8px; background: var(--surface-2); border: 1px solid var(--line); }
   .statcard .bar span { background: var(--accent); }
-  .statcard .sc-sub { font-size: 13px; color: var(--muted); }
+  .statcard .sc-sub { font-size: 14px; color: var(--muted); }
   .statcard.partial { border-color: var(--accent); }
   .statcard.complete { border-color: var(--done); background: var(--done-soft); }
   .statcard.complete .sc-label b, .statcard.complete .sc-num em, .statcard.complete .sc-sub { color: var(--done); }
   .statcard.complete .bar span { background: var(--done); }
+  /* Which number leads depends on the list: the level-filter card on Blue Magic and Beasts, the level-band badges on Fishing. */
+  .stat-lg { font-size: 18px; padding: 5px 15px; }
+  .statcard.primary { order: -1; flex: 2 1 300px; border-width: 2px; border-color: var(--accent); background: var(--accent-soft); }
+  .statcard.primary .sc-num b { font-size: 36px; }
+  .statcard.primary .sc-num small { font-size: 18px; }
+  .statcard.primary .sc-num em { font-size: 22px; }
+  .statcard.primary .bar { height: 10px; background: var(--surface); }
+  .statcard.primary .sc-sub { font-size: 15px; color: var(--ink); }
+  .statcard.primary.complete { border-color: var(--done); background: var(--done-soft); }
+  .statcard.secondary { flex: 1 1 200px; padding: 8px 14px 9px; }
+  .statcard.secondary.partial { border-color: var(--line-strong); }
+  .statcard.secondary .sc-num b { font-size: 19px; }
+  .statcard.secondary .sc-num small { font-size: 13.5px; }
+  .statcard.secondary .sc-num em { font-size: 14px; }
+  .statcard.secondary .bar { height: 5px; margin: 5px 0 4px; }
+  .group.band > header { padding: 12px 16px; }
+  .group.band > header h2 { font-size: 18px; }
 
   .panel {
     background: var(--surface);
@@ -318,7 +335,7 @@
     gap: 10px 14px;
   }
   .label {
-    font-size: 11.5px;
+    font-size: 13px;
     letter-spacing: .08em;
     text-transform: uppercase;
     color: var(--muted);
@@ -384,7 +401,7 @@
     border: 1px solid transparent;
     color: var(--accent);
     font: inherit;
-    font-size: 13.5px;
+    font-size: 14.5px;
     font-weight: 500;
     padding: 6px 8px;
     border-radius: 6px;
@@ -477,7 +494,7 @@
     width: 300px;
     max-width: 100%;
   }
-  .row .hint { color: var(--muted); font-size: 12.5px; }
+  .row .hint { color: var(--muted); font-size: 14px; }
   #catRow { display: inline-flex; flex-wrap: wrap; gap: 8px 10px; }
   .toggle {
     display: inline-flex;
@@ -489,14 +506,14 @@
     background: var(--surface);
     cursor: pointer;
     user-select: none;
-    font-size: 14px;
+    font-size: 15px;
   }
   .toggle input { accent-color: var(--accent); margin: 0; width: 16px; height: 16px; }
   .toggle:has(input:checked) {
     background: var(--accent-soft);
     border-color: var(--accent);
   }
-  .toggle .hint { color: var(--muted); font-size: 12.5px; }
+  .toggle .hint { color: var(--muted); font-size: 14px; }
   .toggle:has(input:disabled) { opacity: .5; cursor: default; }
   .summary {
     display: flex;
@@ -505,7 +522,7 @@
     gap: 6px 16px;
     margin: 18px 2px 10px;
     color: var(--muted);
-    font-size: 14px;
+    font-size: 15px;
     font-variant-numeric: tabular-nums;
   }
   .summary strong { color: var(--ink); font-weight: 600; }
@@ -536,7 +553,7 @@
     margin: 0;
     letter-spacing: .01em;
   }
-  .group > header .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .group > header .meta { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
   .group > header[role="button"] { cursor: pointer; user-select: none; }
   .group > header[role="button"]:hover { filter: brightness(.97); }
   .group > header h2::before { content: "▾\00a0"; color: var(--muted); font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 13px; }
@@ -563,7 +580,7 @@
   .entry .no {
     color: var(--muted);
     font-variant-numeric: tabular-nums;
-    font-size: 13px;
+    font-size: 14px;
     padding-top: 3px;
   }
   .entry .name {
@@ -572,7 +589,7 @@
   }
   .entry .name .stars {
     color: var(--warn);
-    font-size: 12px;
+    font-size: 13.5px;
     letter-spacing: .05em;
     margin-left: 6px;
     white-space: nowrap;
@@ -580,7 +597,7 @@
   .entry .name .minlv {
     color: var(--muted);
     font-weight: 400;
-    font-size: 13px;
+    font-size: 14px;
     margin-left: 6px;
     white-space: nowrap;
   }
@@ -597,7 +614,7 @@
     align-items: center;
     gap: 6px;
     max-width: 100%;
-    font-size: 13px;
+    font-size: 14px;
     padding: 3px 9px 3px 4px;
     border: 1px solid var(--line);
     border-radius: 7px;
@@ -605,7 +622,7 @@
     color: var(--ink);
   }
   .src .k {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     letter-spacing: .03em;
     padding: 1px 6px;
@@ -629,7 +646,7 @@
   .src .maplink {
     color: var(--accent);
     font-weight: 600;
-    font-size: 12px;
+    font-size: 13.5px;
     text-decoration: none;
     padding: 1px 7px;
     border: 1px solid var(--accent);
@@ -640,12 +657,12 @@
   .src .loc { color: var(--muted); }
   .src .note { color: var(--muted); font-style: italic; }
   .src.dim { opacity: .55; }
-  button.src.reveal { cursor: pointer; font: inherit; font-size: 13px; opacity: .75; }
+  button.src.reveal { cursor: pointer; font: inherit; font-size: 14px; opacity: .75; }
   button.src.reveal:hover { opacity: 1; border-color: var(--accent); }
   .sources .more { display: contents; }
   .sources .also {
     flex-basis: 100%;
-    font-size: 12.5px;
+    font-size: 14px;
     color: var(--muted);
     padding-top: 2px;
   }
@@ -654,7 +671,7 @@
   :root[data-list="fsh"] .not-fsh { display: none !important; }
   :root:not([data-list="fsh"]) .fsh-only { display: none !important; }
   .entry.fish { grid-template-columns: 24px 56px minmax(160px, 1fr) minmax(0, 2fr); }
-  .entry.fish .no { font-weight: 600; color: var(--accent); font-size: 13px; }
+  .entry.fish .no { font-weight: 600; color: var(--accent); font-size: 14px; }
   .entry.done.fish .no { color: var(--muted); }
   .fname {
     appearance: none; background: none; border: 0; padding: 0; margin: 0;
@@ -663,24 +680,24 @@
   }
   .fname:hover { color: var(--accent); border-bottom-color: var(--accent); }
   .entry.done .fname { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line-strong); }
-  .ftype { color: var(--muted); font-weight: 400; font-size: 12.5px; margin-left: 6px; }
-  .flv-inline { display: none; color: var(--accent); font-weight: 600; font-size: 12.5px; margin-left: 6px; }
+  .ftype { color: var(--muted); font-weight: 400; font-size: 14px; margin-left: 6px; }
+  .flv-inline { display: none; color: var(--accent); font-weight: 600; font-size: 14px; margin-left: 6px; }
   .src[data-k="ocean"] .k, .src[data-k="diadem"] .k, .src[data-k="island"] .k, .src[data-k="moon"] .k { background: var(--chip-inst-soft); color: var(--chip-inst); }
   .src[data-k="unknown"] .k { background: var(--warn-soft); color: var(--warn); }
   .spots { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .spot { border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; font-size: 13px; line-height: 1.4; }
-  .spot .k { font-size: 11px; font-weight: 600; letter-spacing: .03em; padding: 1px 6px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); margin-right: 6px; white-space: nowrap; }
+  .spot { border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; font-size: 14px; line-height: 1.4; }
+  .spot .k { font-size: 13px; font-weight: 600; letter-spacing: .03em; padding: 1px 6px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); margin-right: 6px; white-space: nowrap; }
   .spot[data-k="ocean"] .k, .spot[data-k="diadem"] .k, .spot[data-k="island"] .k, .spot[data-k="moon"] .k { background: var(--chip-inst-soft); color: var(--chip-inst); }
   .spot[data-k="unknown"] .k { background: var(--warn-soft); color: var(--warn); }
   .spot .sname { font-weight: 600; }
   .spot .loc { color: var(--muted); margin-left: 6px; }
-  .spot .snote { color: var(--muted); font-style: italic; font-size: 12.5px; margin-top: 2px; }
+  .spot .snote { color: var(--muted); font-style: italic; font-size: 14px; margin-top: 2px; }
   .toast {
     position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
     z-index: 7; padding: 9px 16px; border-radius: 999px; background: var(--ink); color: var(--bg);
-    font-size: 14px; font-weight: 500; box-shadow: var(--shadow); max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-size: 15px; font-weight: 500; box-shadow: var(--shadow); max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  @media (max-width: 640px) { .entry.fish { grid-template-columns: 24px 1fr; } .entry.fish .no { display: none; } .flv-inline { display: inline; } }
+  @media (max-width: 640px) { .entry.fish { grid-template-columns: 24px 1fr; } .entry.fish .no { display: none; } .entry.fish .spots { grid-column: 2 / -1; } .flv-inline { display: inline; } }
   .empty {
     text-align: center;
     color: var(--muted);
@@ -692,7 +709,7 @@
   footer {
     margin-top: 28px;
     color: var(--muted);
-    font-size: 12.5px;
+    font-size: 14px;
     line-height: 1.5;
   }
   footer a { color: var(--accent); }
@@ -1190,14 +1207,15 @@
   function statHtml(got, total, size, lead, title) {
     return '<span class="stat ' + size + " " + stateOf(got, total) + '" data-got="' + got + '" data-total="' + total + '"' + (title ? ' title="' + esc(title) + '"' : "") + ">" + statInner(got, total, lead) + "</span>";
   }
-  function setStat(el, got, total, lead) {
+  function setStat(el, got, total, lead, size) {
     el.classList.remove("partial", "complete");
     if (stateOf(got, total)) el.classList.add(stateOf(got, total));
+    if (size) { el.classList.remove("stat-sm", "stat-md", "stat-lg"); el.classList.add(size); }
     el.dataset.got = got; el.dataset.total = total;
     el.innerHTML = statInner(got, total, lead);
   }
-  function statCard(el, labelHtml, got, total, sub) {
-    el.className = "statcard " + stateOf(got, total);
+  function statCard(el, labelHtml, got, total, sub, tier) {
+    el.className = "statcard " + (tier || "") + " " + stateOf(got, total);
     el.dataset.got = got; el.dataset.total = total;
     el.innerHTML = '<div class="sc-label">' + labelHtml + '</div><div class="sc-num"><b>' + got + "</b><small>/ " + total + "</small><em>" + pctText(got, total) + "</em></div>" +
       '<div class="bar"><span style="width:' + pct(got, total) + '%"></span></div><div class="sc-sub">' + esc(sub) + "</div>";
@@ -1281,9 +1299,9 @@
         const visibleItems = ui.hideDone ? items.filter((it) => !it.isDone) : items;
         shown += visibleItems.length;
         const collapsed = isFolded(g.key, complete);
-        html += '<section class="group' + (complete ? " complete" : "") + (collapsed ? " collapsed" : "") + '" id="' + esc(groupDomId(g.key)) + '" data-gkey="' + esc(g.key) + '">' +
+        html += '<section class="group' + (g.kind === "band" ? " band" : "") + (complete ? " complete" : "") + (collapsed ? " collapsed" : "") + '" id="' + esc(groupDomId(g.key)) + '" data-gkey="' + esc(g.key) + '">' +
           '<header role="button" tabindex="0" aria-expanded="' + (!collapsed) + '" title="Click to ' + (collapsed ? "expand" : "collapse") + '"><h2>' + esc(g.title) + "</h2>" +
-          statHtml(got, items.length, "stat-sm", "", "Obtained in this group") +
+          statHtml(got, items.length, g.kind === "band" ? "stat-lg" : "stat-sm", "", "Obtained in this group") +
           '<span class="meta">' + esc(k.label) + (!isFish && isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + (collapsed && visibleItems.length ? " · " + visibleItems.length + " hidden" : "") + "</span></header>";
         for (const it of visibleItems) {
           if (isFish) { html += fishRow(it.e, it.srcs); continue; }
@@ -1309,22 +1327,22 @@
 
     const allDone = entries.length > 0 && doneCount === entries.length;
     const levelDone = lv !== null && eligible > 0 && eligibleDone === eligible;
-    statCard(document.getElementById("allBox"), "Whole list", doneCount, entries.length, allDone ? "All done ✓" : (entries.length - doneCount) + " to go");
+    statCard(document.getElementById("allBox"), "Whole list", doneCount, entries.length, allDone ? "All done ✓" : (entries.length - doneCount) + " to go", isFish || lv !== null ? "secondary" : "");
     const $lvlBox = document.getElementById("lvlBox");
     $lvlBox.hidden = lv === null;
-    if (lv !== null) statCard($lvlBox, "Level ≤ <b>" + lv + "</b>", eligibleDone, eligible, levelDone ? "Done ✓" : eligible === 0 ? "nothing to get at this level" : (eligible - eligibleDone) + " to go");
+    if (lv !== null) statCard($lvlBox, "Level ≤ <b>" + lv + "</b>", eligibleDone, eligible, levelDone ? "Done ✓" : eligible === 0 ? "nothing to get at this level" : (eligible - eligibleDone) + " to go", isFish ? "secondary" : "primary");
     $summary.innerHTML =
       "<span><strong>" + esc(names[ui.char]) + "</strong> · " + listName(ui.list) + "</span>" +
       "<span>Showing " + shown + (grouped ? (isFish ? " grouped by level" : " grouped by location") : "") + (lv !== null ? " at level ≤ " + lv : "") +
       (grouped && shown ? ' · <button type="button" class="linklike" data-fold="collapse">Collapse all</button> · <button type="button" class="linklike" data-fold="expand">Expand all</button>' : "") + "</span>";
     const $cbLevel = document.getElementById("cbLevel");
     $cbLevel.hidden = lv === null;
-    if (lv !== null) setStat($cbLevel, eligibleDone, eligible, "Lv ≤ " + lv + " ");
+    if (lv !== null) setStat($cbLevel, eligibleDone, eligible, "Lv ≤ " + lv + " ", isFish ? "stat-md" : "stat-lg");
     document.getElementById("clearBtn").textContent = "Uncheck all " + listName(ui.list) + " for " + names[ui.char] + "…";
     document.getElementById("cbChar").textContent = names[ui.char];
     document.getElementById("cbList").textContent = listName(ui.list);
     document.getElementById("cbIcon").src = ICONS[ui.list];
-    setStat(document.getElementById("cbCount"), doneCount, entries.length);
+    setStat(document.getElementById("cbCount"), doneCount, entries.length, "", lv !== null ? "stat-sm" : "stat-md");
     document.getElementById("undoBtn").hidden = !(lastCleared && lastCleared.key === progKey());
   }
 

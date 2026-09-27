@@ -129,6 +129,8 @@ test("the level box counts what is obtainable at that level and turns green when
   const p = await load();
   await p.input("levelInput", "12");
   assert.equal(p.stat("lvlBox"), "1 / 15");
+  assert.ok(p.id("lvlBox").classList.contains("primary") && p.id("allBox").classList.contains("secondary"), "the level card leads on Blue Magic");
+  assert.ok(p.id("cbLevel").classList.contains("stat-lg"), "and in the pinned bar");
   assert.match(p.id("lvlBox").textContent, /Level ≤ 12.*14 to go/s);
   assert.equal(p.stat("cbLevel"), "1 / 15");
   assert.match(p.id("cbLevel").textContent, /Lv ≤ 12/);
@@ -299,6 +301,7 @@ test("the Fishing list: level bands, open world by default, category toggles, co
   // level bands in order, only open-world fish by default
   const titles = p.groups().map((g) => g.title);
   assert.deepEqual(titles.slice(0, 4), ["Level 1–15", "Level 16–30", "Level 31–40", "Level 41–50"]);
+  assert.ok(p.$(".group.band header .stat").classList.contains("stat-lg") && p.id("allBox").classList.contains("secondary"), "the band badges lead on Fishing");
   const shownDefault = p.$$(".entry.fish").length;
   assert.ok(shownDefault > 1000 && shownDefault < p.$$(".entry.fish").length + 400, "roughly the open-world fish");
   assert.equal(p.$$('.spot[data-k="ocean"]').length, 0, "no ocean spots while the toggle is off");
