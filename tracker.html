@@ -859,7 +859,7 @@
   // ---------- state ----------
   const ui = Object.assign({
     list: "blu", char: "c1", hideDone: false, openWorldOnly: false, rareCounts: false, groupByLoc: false, sort: "no",
-    search: "", levels: {}, levelOn: {}, fishCats: {}
+    search: "", searchBy: {}, levels: {}, levelOn: {}, fishCats: {}
   }, readLS(LS_UI, {}));
   delete ui.collapsed; // fold state from an earlier version; no longer stored
   const progress = readLS(LS_PROG, {});   // key "c1-blu" -> {id: true}
@@ -1021,8 +1021,9 @@
     const lv = levelFilter();
     return entry.sources.filter((s) => lv === null || s.lv <= lv);
   }
+  function currentSearch() { if (!ui.searchBy || typeof ui.searchBy !== "object") ui.searchBy = {}; return ui.searchBy[ui.list] || ""; }
   function matchesSearch(entry, sources) {
-    const q = ui.search.trim().toLowerCase();
+    const q = currentSearch().trim().toLowerCase();
     if (!q) return true;
     if (entry.name.toLowerCase().includes(q)) return true;
     return sources.some((s) => (s.name + " " + (s.loc || "") + " " + (s.note || "")).toLowerCase().includes(q));
@@ -1184,6 +1185,7 @@
     renderChars();
     renderCounts();
     const lvInput = document.getElementById("levelInput");
+    if (document.activeElement !== $search) $search.value = currentSearch();
     const lv = levelFilter();
     const lvv = levelValue();
     if (document.activeElement !== lvInput) lvInput.value = lvv === null ? "" : String(lvv);
@@ -1441,13 +1443,13 @@
   syncControls();
   document.getElementById("sortSel").addEventListener("change", (ev) => { ui.sort = SORTS.includes(ev.target.value) ? ev.target.value : "no"; saveUI(); render(); });
   const $search = document.getElementById("searchInput");
-  $search.value = ui.search || "";
-  $search.addEventListener("input", () => { ui.search = $search.value; writeLS(LS_UI, ui); render(); });
+  $search.value = currentSearch();
+  $search.addEventListener("input", () => { currentSearch(); ui.searchBy[ui.list] = $search.value; writeLS(LS_UI, ui); render(); });
   document.getElementById("resetBtn").addEventListener("click", () => {
     askConfirm("Reset the filters?", "Clears the level, the toggles and the search for " + names[ui.char] + " · " + listName(ui.list) + ". Your checks are not affected.", "Yes, reset", () => {
       ui.hideDone = ui.openWorldOnly = ui.rareCounts = ui.groupByLoc = false;
       ui.fishCats = {};
-      ui.search = ""; delete ui.levels[levelKey()];
+      currentSearch(); delete ui.searchBy[ui.list]; delete ui.levels[levelKey()];
       if (ui.levelOn && typeof ui.levelOn === "object") delete ui.levelOn[levelKey()];
       syncControls();
       $search.value = ""; $level.value = "";
