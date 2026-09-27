@@ -545,6 +545,19 @@
     letter-spacing: .01em;
   }
   .group > header .meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .group > header .gcount {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 2px 11px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1.5px solid var(--line-strong);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .group > header .gcount.partial { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .group > header .gcount.complete { border-color: var(--done); color: #ffffff; background: var(--done); }
   .group > header[role="button"] { cursor: pointer; user-select: none; }
   .group > header[role="button"]:hover { filter: brightness(.97); }
   .group > header h2::before { content: "▾"; display: inline-block; width: 1em; color: var(--muted); font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 13px; }
@@ -1272,6 +1285,7 @@
         const collapsed = isFolded(g.key, complete);
         html += '<section class="group' + (complete ? " complete" : "") + (collapsed ? " collapsed" : "") + '" id="' + esc(groupDomId(g.key)) + '" data-gkey="' + esc(g.key) + '">' +
           '<header role="button" tabindex="0" aria-expanded="' + (!collapsed) + '" title="Click to ' + (collapsed ? "expand" : "collapse") + '"><h2>' + esc(g.title) + "</h2>" +
+          '<span class="gcount' + (complete ? " complete" : got ? " partial" : "") + '" title="Obtained in this group">' + got + " / " + items.length + "</span>" +
           '<span class="meta">' + esc(k.label) + " · " + got + " of " + items.length + " obtained" +
           (!isFish && isFinite(g.minLv) ? " · from Lv " + g.minLv : "") + (collapsed && visibleItems.length ? " · " + visibleItems.length + " hidden" : "") + "</span>" +
           (complete ? '<span class="done-badge">Done ✓</span>' : "") + "</header>";
