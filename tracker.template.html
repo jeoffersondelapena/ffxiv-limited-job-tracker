@@ -587,7 +587,7 @@
     font-weight: 600;
     cursor: pointer;
   }
-  .entry .name .stars {
+  .entry .name .stars, .entry.fish .stars {
     color: var(--warn);
     font-size: 13.5px;
     letter-spacing: .05em;
@@ -1152,6 +1152,7 @@
       '<input type="checkbox" id="' + id + '" ' + (done ? "checked" : "") + ' aria-label="Obtained: ' + esc(entry.name) + '">' +
       '<span class="no">' + (byNo ? "#" + entry.no : lvText) + "</span>" +
       '<div><button type="button" class="fname" data-copy="' + esc(entry.name) + '" title="Tap to copy the name">' + esc(entry.name) + "</button>" +
+      (entry.stars ? '<span class="stars" title="' + entry.stars + '-star fish">' + "★".repeat(entry.stars) + "</span>" : "") +
       (byNo ? '<span class="fno-inline">#' + entry.no + "</span>" : "") +
       '<span class="flv-inline' + (byNo ? " show" : "") + '">' + lvText + "</span>" +
       (entry.kind === "spear" ? '<span class="ftype">spearfishing</span>' : entry.type ? '<span class="ftype">' + esc(entry.type) + "</span>" : "") + "</div>" +

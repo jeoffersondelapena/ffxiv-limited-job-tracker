@@ -26,6 +26,7 @@ class FishDataTests(unittest.TestCase):
             self.assertTrue(e["name"], e)
             self.assertIn(e["kind"], ("fish", "spear"), e["name"])
             self.assertTrue(e["lv"] is None or 1 <= e["lv"] <= 100, (e["name"], e["lv"]))
+            self.assertTrue(0 <= e["stars"] <= 5, (e["name"], e["stars"]))
             self.assertTrue(e["sources"], e["name"] + " has no spot at all")
             for s in e["sources"]:
                 self.assertIn(s["k"], CATS, (e["name"], s))
@@ -52,6 +53,9 @@ class FishDataTests(unittest.TestCase):
     def test_well_known_fish(self):
         by = {e["name"]: e for e in self.fish}
         self.assertEqual(by["Crayfish"]["lv"], 2)
+        # these two have no level line on the wiki; the hole level (15) is wrong, the game data says 20
+        self.assertEqual(by["Bluebell Salmon"]["lv"], 20)
+        self.assertEqual(by["Razor Clam"]["lv"], 20)
         self.assertTrue(any(s["k"] == "world" and s["loc"] == "Central Shroud" for s in by["Crayfish"]["sources"]))
         self.assertTrue(all(s["k"] == "ocean" for s in by["Merlthor Goby"]["sources"]) or any(s["k"] == "world" for s in by["Merlthor Goby"]["sources"]))
         ocean_only = [e["name"] for e in self.fish if all(s["k"] == "ocean" for s in e["sources"])]

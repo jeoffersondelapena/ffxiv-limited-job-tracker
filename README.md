@@ -16,7 +16,7 @@ Then republish `tracker.html` to the same hosted page (republishing keeps saved 
 ## Invariants
 
 - `tracker.html` is generated. Edit `tracker.template.html` (page), `build_data.py` (spell and beast rules) or `fish_build.py` (fish rules), never the output.
-- `fish.json` keeps every fish from the Fish Guide with its guide page and number (fishing and spearfishing are numbered separately); each spot is tagged open world / ocean / Diadem / island / moon / unknown and the page's toggles decide what is shown. Fish ids are the wiki's Garland Tools item ids, so saved checks survive a refresh.
+- `fish.json` keeps every fish from the Fish Guide with its guide page and number (fishing and spearfishing are numbered separately). Levels and star ratings come from the game's own FishParameter and SpearfishingItem sheets (`fish_levels.py`, via the xivapi data mirror), because the wiki's "Recommended Fishing Level" is often just the fishing hole's level; the wiki value, then the hole level, are the fallbacks. Each spot is tagged open world / ocean / Diadem / island / moon / unknown and the page's toggles decide what is shown. Fish ids are the wiki's Garland Tools item ids, so saved checks survive a refresh.
 - Saved checks live in the hosted page's database (`progress/<c1|c2>-<blu|bst>`), not in this repo. Republishing never touches them.
 - `build_data.py` drops Savage, Unreal, Ultimate and level > 80 sources for Blue Mage (job cap), and only the hard-coded zone list counts as open world.
 - Download caches (`pages/`, `enemies/`, `places/`) are re-fetched when missing; delete them to force a full refresh.

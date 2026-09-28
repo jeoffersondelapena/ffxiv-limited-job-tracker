@@ -1,7 +1,7 @@
 """Fish pipeline, step 2: turn the cached fish pages into fish.json. Every fish from the Fish Guide is
 kept; each of its spots is tagged by where it is caught: open world (zones you walk and teleport
 through), ocean fishing, the Diadem, the island, the moon, or other/unknown. The page decides what to show."""
-import json, re, sys, collections, urllib.parse
+import json, os, re, sys, collections, urllib.parse
 sys.path.insert(0, './pylib')
 import build_data as b
 
@@ -38,6 +38,7 @@ def main():
 
     fish_list = json.load(open('fish/fish_list.json'))
     pages = json.load(open('fish/pages.json'))
+    game = json.load(open('fish/fish_levels.json')) if os.path.exists('fish/fish_levels.json') else {}  # from fish_levels.py
     out, stats = [], collections.Counter()
     seen = set()
     for f in fish_list:
@@ -49,6 +50,13 @@ def main():
         ftype = strip_links(ft.group(1)) if ft else ''
         gt = re.search(r'\|\s*id-gt\s*=\s*(\d+)', wt)
         fid = int(gt.group(1)) if gt else None
+        g = game.get(str(fid)) if fid is not None else None
+        stars = 0
+        if g and 1 <= (g.get('lv') or 0) <= 100:      # the game's own level beats the wiki's, which is often the hole level
+            lv, stars = g['lv'], g.get('stars') or 0
+            stats['level from game data'] += 1
+        elif lv is not None:
+            stats['level from wiki'] += 1
         spots = []
         for sec in re.finditer(r'^===\s*\[\[(?:Fishing|Spearfishing) Log: ([^\]|]+)(?:\|[^\]]*)?\]\][^\n]*===\s*$(.*?)(?=^==|\Z)', wt, re.M | re.S):
             hole = strip_links(sec.group(1)); body = sec.group(2)
@@ -107,7 +115,7 @@ def main():
                 if s[k] in (None, ''): del s[k]
         cats = sorted({s['k'] for s in spots})
         for c in cats: stats['spots in: ' + c] += 1
-        out.append(dict(id=fid, name=f['name'], lv=lv, kind=f['kind'], type=ftype, page=int(f['page']), no=int(f['no']), sources=spots))
+        out.append(dict(id=fid, name=f['name'], lv=lv, stars=stars, kind=f['kind'], type=ftype, page=int(f['page']), no=int(f['no']), sources=spots))
     out.sort(key=lambda e: (e['lv'] if e['lv'] is not None else 999, e['name']))
     json.dump(out, open('fish.json', 'w'), ensure_ascii=False, separators=(',', ':'))
     print(len(out), 'fish kept of', len(fish_list), 'listed;', sum(e['kind'] == 'spear' for e in out), 'spearfishing')
