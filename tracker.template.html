@@ -1133,10 +1133,9 @@
     return { key: "page:" + (spear ? "spear" : "fish") + ":" + e.page, title: (spear ? "Spearfishing · Page " : "Page ") + e.page, kind: "page", order: (spear ? 1000 : 0) + e.page, minLv: 0 };
   }
   function fishGroupOf(e) { return fishByNo() ? pageOf(e) : bandOf(e.lv); }
-  function fishOrder(a, b) {
-    if (fishByNo()) return (a.kind === "spear") - (b.kind === "spear") || a.page - b.page || a.no - b.no;
-    return (a.lv ?? 999) - (b.lv ?? 999) || a.name.localeCompare(b.name);
-  }
+  // Fish Guide order: fishing before spearfishing, then page, then number (the # restarts on every page).
+  function guideOrder(a, b) { return (a.kind === "spear") - (b.kind === "spear") || a.page - b.page || a.no - b.no; }
+  function fishOrder(a, b) { return fishByNo() ? guideOrder(a, b) : (a.lv ?? 999) - (b.lv ?? 999) || guideOrder(a, b); }
   function fishRow(entry, sources) {
     const done = !!progress[progKey()][entry.id];
     const id = "e-" + ui.list + "-" + entry.id + "-" + (rowSeq++);
@@ -1149,7 +1148,7 @@
         (s.loc && s.k !== "unknown" ? '<span class="loc">' + esc(s.loc) + (s.xy ? " (" + esc(s.xy) + ")" : "") + "</span>" : "") +
         (s.note ? '<div class="snote">' + esc(s.note) + "</div>" : "") + "</div>";
     }).join("");
-    return '<div class="entry fish' + (done ? " done" : "") + '" data-id="' + entry.id + '">' +
+    return '<div class="entry fish' + (done ? " done" : "") + '" data-id="' + entry.id + '" data-page="' + entry.page + '" data-no="' + entry.no + '"' + (entry.kind === "spear" ? ' data-spear=""' : "") + ">" +
       '<input type="checkbox" id="' + id + '" ' + (done ? "checked" : "") + ' aria-label="Obtained: ' + esc(entry.name) + '">' +
       '<span class="no">' + (byNo ? "#" + entry.no : lvText) + "</span>" +
       '<div><button type="button" class="fname" data-copy="' + esc(entry.name) + '" title="Tap to copy the name">' + esc(entry.name) + "</button>" +

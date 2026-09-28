@@ -317,6 +317,11 @@ test("the Fishing list: level bands, open world by default, category toggles, co
   let first = p.$$(".group[data-gkey]")[0];
   const lvls = [...first.querySelectorAll(".entry.fish .no")].map((n) => Number(n.textContent.replace(/\D/g, "")));
   assert.deepEqual(lvls, [...lvls].sort((a, b) => a - b));
+  // ties on level follow Fish Guide order: fishing before spearfishing, then page, then number
+  const keys = [...first.querySelectorAll(".entry.fish")].map((e) => [Number(e.querySelector(".no").textContent.replace(/\D/g, "")), e.hasAttribute("data-spear") ? 1 : 0, Number(e.dataset.page), Number(e.dataset.no)]);
+  const cmp = (x, y) => x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || x[3] - y[3];
+  assert.deepEqual(keys, [...keys].sort(cmp));
+  assert.ok(keys.some((k, i) => i && k[0] === keys[i - 1][0]), "the band has level ties, so the tie-break is exercised");
   // by Fish Guide number: grouped by page, numbered rows, a setting of its own that syncs
   const chooseFish = async (v) => { p.id("fishSortSel").value = v; p.id("fishSortSel").dispatchEvent(new p.w.Event("change", { bubbles: true })); await sleep(10); };
   assert.notEqual(p.w.getComputedStyle(p.id("fishSortSel").closest("label")).display, "none", "the fish sort is offered on the Fishing tab");
